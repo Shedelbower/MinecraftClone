@@ -10,7 +10,9 @@ public class ChunkManager : MonoBehaviour
     [Range(4, 64)] public int chunkHeight = 32;
 
     public Texture2D blockAtlas;
-    public Material chunkMaterial;
+    public Material chunkOpaqueMaterial;
+    public Material chunkFadeMaterial;
+
 
     [SerializeField] private Dictionary<Vector2Int, WorldChunk> _chunks;
 
@@ -103,7 +105,8 @@ public class ChunkManager : MonoBehaviour
 
         // TODO: Have chunk load these from resources
         chunk.blockAtlas = this.blockAtlas;
-        chunk.chunkMaterial = this.chunkMaterial;
+        chunk.chunkOpaqueMaterial = this.chunkOpaqueMaterial;
+        chunk.chunkFadeMaterial = this.chunkFadeMaterial;
 
         chunk.Initialize(pos.x, pos.y, chunkWidth, chunkHeight);
 

@@ -15,9 +15,9 @@ MonoBehaviour:
   displayName: Grass
   atlasPositions:
   - {x: 2, y: 1}
-  - {x: 1, y: 1}
-  - {x: 1, y: 1}
-  - {x: 1, y: 1}
-  - {x: 1, y: 1}
   - {x: 0, y: 1}
+  - {x: 1, y: 1}
+  - {x: 1, y: 1}
+  - {x: 1, y: 1}
+  - {x: 1, y: 1}
   isTransparent: 0

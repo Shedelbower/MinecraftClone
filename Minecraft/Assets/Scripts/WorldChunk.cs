@@ -6,7 +6,8 @@ using UnityEngine;
 public class WorldChunk : MonoBehaviour
 {
     public Texture2D blockAtlas;
-    public Material chunkMaterial;
+    public Material chunkOpaqueMaterial;
+    public Material chunkFadeMaterial;
 
 
 
@@ -93,7 +94,13 @@ public class WorldChunk : MonoBehaviour
         Debug.Log("Initialized Chunk");
     }
 
-    public Mesh BuildMesh()
+    public void BuildMesh()
+    {
+        BuildOpaqueMesh();
+        BuildWaterMesh();
+    }
+
+    public Mesh BuildOpaqueMesh()
     {
         bool[,,] isExternalBlock = GetExternalBlockMatrix();
 
@@ -106,26 +113,14 @@ public class WorldChunk : MonoBehaviour
             {
                 for (int k = 0; k < _width; k++)
                 {
-                    if (isExternalBlock[i,j,k])
-                    {
-                        Block block = _blocks[i, j, k];
+                    Block block = _blocks[i, j, k];
 
-                        //GameObject go = new GameObject("Block (" + i + "," + j + "," + k + ")");
-                        //go.transform.parent = this.transform;
-                        //go.transform.localPosition = new Vector3(i, j, k);
-                        //MeshFilter mf = go.AddComponent<MeshFilter>();
-                        //MeshRenderer mr = go.AddComponent<MeshRenderer>();
+                    if (isExternalBlock[i,j,k] && block.IsTransparent() == false)
+                    {
+                        //Block block = _blocks[i, j, k];
 
                         bool[] visibility = GetVisibility(i,j,k);
-                        //{
-                        //    true,true,true,true,true,true
-                        //};
-
-                        //mf.sharedMesh = block.GenerateFaces(visibility, _atlasReader);
-
-                        //mr.sharedMaterial = chunkMaterial;
-
-                       
+                        
                         Mesh mesh = block.GenerateFaces(visibility, _atlasReader);
                         meshes.Add(mesh);
 
@@ -134,8 +129,6 @@ public class WorldChunk : MonoBehaviour
                 }
             }
         }
-
-        Debug.Log("Done Building");
 
         Mesh final = new Mesh();
         CombineInstance[] combine = new CombineInstance[meshes.Count];
@@ -148,7 +141,7 @@ public class WorldChunk : MonoBehaviour
 
         final.CombineMeshes(combine, true);
 
-        GameObject go = new GameObject("Mesh");
+        GameObject go = new GameObject("Mesh (Opaque)");
         go.isStatic = true;
         go.transform.parent = this.transform;
         go.transform.localPosition = new Vector3(0,0,0);
@@ -157,8 +150,66 @@ public class WorldChunk : MonoBehaviour
         MeshCollider mc = go.AddComponent<MeshCollider>();
 
         mf.sharedMesh = final;
-        mr.sharedMaterial = chunkMaterial;
+        mr.sharedMaterial = chunkOpaqueMaterial;
         mc.sharedMesh = mf.sharedMesh;
+
+        return final;
+    }
+
+    public Mesh BuildWaterMesh()
+    {
+        // TODO: Store this from other build
+        bool[,,] isExternalBlock = GetExternalBlockMatrix();
+
+        List<Mesh> meshes = new List<Mesh>();
+        List<Matrix4x4> translations = new List<Matrix4x4>();
+
+        for (int i = 0; i < _width; i++)
+        {
+            for (int j = 0; j < _height; j++)
+            {
+                for (int k = 0; k < _width; k++)
+                {
+                    Block block = _blocks[i, j, k];
+
+                    if (isExternalBlock[i, j, k] && block.type.displayName == "Water")
+                    {
+                        bool[] visibility = GetVisibility(i, j, k);
+
+                        Mesh mesh = block.GenerateFaces(visibility, _atlasReader);
+                        meshes.Add(mesh);
+
+                        translations.Add(Matrix4x4.Translate(new Vector3(i, j, k)));
+                    }
+                }
+            }
+        }
+
+        Mesh final = new Mesh();
+        CombineInstance[] combine = new CombineInstance[meshes.Count];
+
+        for (int i = 0; i < combine.Length; i++)
+        {
+            combine[i].mesh = meshes[i];
+            combine[i].transform = translations[i];
+        }
+
+        final.CombineMeshes(combine, true);
+
+        GameObject go = new GameObject("Mesh (Water)");
+        go.isStatic = true;
+        go.transform.parent = this.transform;
+        go.transform.localPosition = new Vector3(0, 0, 0);
+        go.tag = "Water";
+        MeshFilter mf = go.AddComponent<MeshFilter>();
+        MeshRenderer mr = go.AddComponent<MeshRenderer>();
+        MeshCollider mc = go.AddComponent<MeshCollider>();
+
+        mf.sharedMesh = final;
+        mr.sharedMaterial = chunkFadeMaterial;
+        mc.sharedMesh = mf.sharedMesh;
+        mc.convex = true; // TODO: Temporary fix
+        mc.isTrigger = true;
 
         return final;
     }
@@ -256,30 +307,6 @@ public class WorldChunk : MonoBehaviour
         visibility[5] = (k == 0) || _blocks[i, j, k - 1] == null || (_blocks[i, j, k - 1].IsTransparent() && _blocks[i, j, k - 1].type != type);
 
         return visibility;
-    }
-
-    //public void Start()
-    //{
-    //    int x = Mathf.FloorToInt(this.transform.position.x);
-    //    int z = Mathf.FloorToInt(this.transform.position.z);
-    //    Initialize(x, z);
-
-    //    this.BuildMesh();
-    //}
-
-    public void Update()
-    {
-        //if (Input.GetKeyDown(KeyCode.Space))
-        //{
-        //    int x = Mathf.FloorToInt(this.transform.position.x);
-        //    int z = Mathf.FloorToInt(this.transform.position.z);
-        //    Initialize(x,z);
-        //}
-
-        //if(Input.GetKeyDown(KeyCode.Return))
-        //{
-        //    this.BuildMesh();
-        //}
     }
 
 }
