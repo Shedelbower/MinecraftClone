@@ -45,41 +45,47 @@ public class WorldChunk : MonoBehaviour
 
                 for (int y = 0; y < _height; y++)
                 {
-                    Block.Type type;
+                    //Block.Type type;
+                    string type;
 
                     int waterLevel = _height / 4;
 
                     if (y == 0)
                     {
-                        type = Block.Type.Bedrock;
+                        //type = "Bedrock";
+                        type = "Grass";
+
                     }
                     else if (y < noise-3)
                     {
-                        type = Block.Type.Stone;
+                        type = "Stone";
                     }
                     else if (y < noise)
                     {
-                        type = Block.Type.Dirt;
+                        type = "Dirt";
                     }
                     else if (y == noise && y >= waterLevel)
                     {
-                        type = Block.Type.Grass;
+                        type = "Grass";
                     }
                     else if (y == noise && y < waterLevel)
                     {
-                        type = Block.Type.Sand;
+                        type = "Sand";
                     }
                     else if (y <= waterLevel)
                     {
-                        type = Block.Type.Water;
+                        type = "Water";
                     }
                     else
                     {
-                        type = Block.Type.Air;
+                        type = "";
                     }
 
                     // Height is 3rd index
-                    _blocks[x, y, z] = new Block(type);
+                    if (type != "")
+                    {
+                        _blocks[x, y, z] = new Block(type);
+                    }
                 }
             }
         }
@@ -167,7 +173,7 @@ public class WorldChunk : MonoBehaviour
             {
                 for (int k = 0; k < _width; k++)
                 {
-                    if (_blocks[i,j,k].type == Block.Type.Air)
+                    if (_blocks[i,j,k] == null)
                     {
                         // Don't render air blocks
                         continue;
@@ -185,7 +191,8 @@ public class WorldChunk : MonoBehaviour
                     foreach (Vector3Int coord in neighbors)
                     {
                         //Debug.Log(coord.ToString());
-                        if (_blocks[coord.x, coord.y, coord.z].IsTransparent())
+                        Block block = _blocks[coord.x, coord.y, coord.z];
+                        if (block == null || block.IsTransparent())
                         {
                             hasTransparentNeighbor = true;
                             break;
@@ -238,14 +245,15 @@ public class WorldChunk : MonoBehaviour
     {
         bool[] visibility = new bool[6];
 
-        Block.Type type = _blocks[i, j, k].type;
+        BlockType type = _blocks[i, j, k].type;
 
-        visibility[0] = (j == _height - 1) || (_blocks[i, j + 1, k].IsTransparent() && _blocks[i, j + 1, k].type != type);
-        visibility[1] = (j == 0) || (_blocks[i, j - 1, k].IsTransparent() && _blocks[i, j - 1, k].type != type);
-        visibility[2] = (i == _width - 1) || (_blocks[i + 1, j, k].IsTransparent() && _blocks[i + 1, j, k].type != type);
-        visibility[3] = (i == 0) || (_blocks[i - 1, j, k].IsTransparent() && _blocks[i - 1, j, k].type != type);
-        visibility[4] = (k == _width - 1) || (_blocks[i, j, k + 1].IsTransparent() && _blocks[i, j, k + 1].type != type);
-        visibility[5] = (k == 0) || (_blocks[i, j, k - 1].IsTransparent() && _blocks[i, j, k - 1].type != type);
+        // Up, Down, Front, Back, Left, Right
+        visibility[0] = (j == _height - 1) || _blocks[i, j + 1, k] == null || (_blocks[i, j + 1, k].IsTransparent() && _blocks[i, j + 1, k].type != type);
+        visibility[1] = (j == 0) || _blocks[i, j - 1, k] == null || (_blocks[i, j - 1, k].IsTransparent() && _blocks[i, j - 1, k].type != type);
+        visibility[2] = (i == _width - 1) || _blocks[i + 1, j, k] == null || (_blocks[i + 1, j, k].IsTransparent() && _blocks[i + 1, j, k].type != type);
+        visibility[3] = (i == 0) || _blocks[i - 1, j, k] == null || (_blocks[i - 1, j, k].IsTransparent() && _blocks[i - 1, j, k].type != type);
+        visibility[4] = (k == _width - 1) || _blocks[i, j, k + 1] == null || (_blocks[i, j, k + 1].IsTransparent() && _blocks[i, j, k + 1].type != type);
+        visibility[5] = (k == 0) || _blocks[i, j, k - 1] == null || (_blocks[i, j, k - 1].IsTransparent() && _blocks[i, j, k - 1].type != type);
 
         return visibility;
     }
@@ -274,259 +282,4 @@ public class WorldChunk : MonoBehaviour
         //}
     }
 
-}
-
-public class Block
-{
-    public enum Type
-    {
-        Air,
-        Grass,
-        Dirt,
-        Stone,
-        Bedrock,
-        Water,
-        Sand
-    }
-
-    public static Vector3[] FACE_DIRECTIONS = {
-        Vector3.up,
-        Vector3.down,
-        Vector3.right,
-        Vector3.left,
-        Vector3.forward,
-        Vector3.back
-    };
-
-    public Type type;
-
-    public Block(Type type)
-    {
-        this.type = type;
-    }
-
-    public bool IsTransparent()
-    {
-        return this.type == Type.Air || this.type == Type.Water;
-    }
-
-    public static Mesh GenerateCube()
-    {
-        Vector3[] directions = {
-            Vector3.up,
-            Vector3.down,
-            Vector3.right,
-            Vector3.left,
-            Vector3.forward,
-            Vector3.back
-        };
-
-        CombineInstance[] combine = new CombineInstance[directions.Length];
-
-        for (int i = 0; i < combine.Length; i++)
-        {
-            combine[i].mesh = GenerateQuad(directions[i]);
-            //Debug.Log(combine[i].mesh.vertexCount);
-            combine[i].transform = Matrix4x4.identity;
-        }
-        Mesh mesh = new Mesh();
-        mesh.CombineMeshes(combine, true);
-
-        return mesh;
-    }
-
-    public static Mesh GenerateQuad(Vector3 direction)
-    {
-        List<Vector3> vertices = new List<Vector3>();
-        //List<Vector2> uvs = new List<Vector2>();
-        int[] triangles = new int[6];
-
-        float min = -0.5f;
-        float max = 0.5f;
-        vertices.Add(new Vector3(min, max, min));
-        vertices.Add(new Vector3(min, max, max));
-        vertices.Add(new Vector3(max, max, max));
-        vertices.Add(new Vector3(max, max, min));
-
-        Quaternion rot = Quaternion.FromToRotation(Vector3.up, direction);
-
-        Vector3 temp = direction;
-        temp.y = 0.0f;
-        if (Vector3.Dot(Vector3.forward, temp) > 0.99f)
-        {
-            Quaternion rot2 = Quaternion.AngleAxis(180f, Vector3.up);
-            rot = rot * rot2;
-        }
-        else if (temp.sqrMagnitude > 0.01f)
-        {
-            Quaternion rot2 = Quaternion.FromToRotation(Vector3.back,temp);
-            rot = rot * rot2;
-        }
-
-        for (int i = 0; i < vertices.Count; i++)
-        {
-            vertices[i] = rot * vertices[i];
-        }
-
-
-
-        //uvs.Add(new Vector2(0f, 0f));
-        //uvs.Add(new Vector2(0f, 1f));
-        //uvs.Add(new Vector2(1f, 1f));
-        //uvs.Add(new Vector2(1f, 0f));
-
-        triangles[0] = 0;
-        triangles[1] = 1;
-        triangles[2] = 2;
-        triangles[3] = 0;
-        triangles[4] = 2;
-        triangles[5] = 3;
-
-        Mesh mesh = new Mesh();
-        mesh.SetVertices(vertices);
-        //mesh.SetUVs(0, uvs);
-        mesh.SetTriangles(triangles,0);
-        mesh.RecalculateNormals();
-
-        return mesh;
-    }
-
-    public Mesh GenerateFaces(bool[] faceIsVisible, AtlasReader atlasReader)
-    {
-        List<List<Vector3>> vertexLists = new List<List<Vector3>>();
-        List<List<Vector3>> normalLists = new List<List<Vector3>>();
-        List<List<Vector2>> uvLists = new List<List<Vector2>>();
-        List<int[]> triangleLists = new List<int[]>();
-
-        for (int i = 0; i < FACE_DIRECTIONS.Length; i++)
-        {
-            if (faceIsVisible[i] == false)
-            {
-                continue; // Don't bother making a mesh for a face that can't be seen.
-            }
-
-            GenerateBlockFace(FACE_DIRECTIONS[i], out List<Vector3> vertices, out List<Vector3> normals, out int[] triangles);
-
-            List<Vector2> uvs;
-            switch (type)
-            {
-                case Type.Sand:
-                    Debug.Log("SAND");
-                    uvs = atlasReader.GetUVs(4, 0);
-                    break;
-                case Type.Bedrock:
-                    uvs = atlasReader.GetUVs(3, 0);
-                    break;
-                case Type.Stone:
-                    uvs = atlasReader.GetUVs(2, 0);
-                    break;
-                case Type.Dirt:
-                    uvs = atlasReader.GetUVs(1, 0);
-                    break;
-                case Type.Grass:
-                    if (i == 0)
-                    {
-                        uvs = atlasReader.GetUVs(0, 0);
-                    } else if (i == 1)
-                    {
-                        uvs = atlasReader.GetUVs(1, 0);
-                    } else
-                    {
-                        uvs = atlasReader.GetUVs(0, 1);
-                    }
-                    break;
-                case Type.Water:
-                    uvs = atlasReader.GetUVs(0, 2);
-                    break;
-                default:
-                    uvs = atlasReader.GetUVs(0, 0);
-                    break;
-            }
-
-            vertexLists.Add(vertices);
-            normalLists.Add(normals);
-            uvLists.Add(uvs);
-            triangleLists.Add(triangles);
-        }
-
-        List<Vector3> allVertices = new List<Vector3>();
-        List<Vector3> allNormals = new List<Vector3>();
-        List<Vector2> allUVs = new List<Vector2>();
-        List<int> allTriangles = new List<int>();
-
-        foreach (List<Vector3> vertexList in vertexLists)
-        {
-            allVertices.AddRange(vertexList);
-        }
-
-        foreach (List<Vector3> normalList in normalLists)
-        {
-            allNormals.AddRange(normalList);
-        }
-
-        foreach (List<Vector2> uvList in uvLists)
-        {
-            allUVs.AddRange(uvList);
-        }
-
-        for (int i = 0; i < triangleLists.Count; i++)
-        {
-            for (int j = 0; j < triangleLists[i].Length; j++)
-            {
-                triangleLists[i][j] += i * 4;
-            }
-            allTriangles.AddRange(triangleLists[i]);
-        }
-
-        Mesh mesh = new Mesh();
-        mesh.SetVertices(allVertices);
-        mesh.SetNormals(allNormals);
-        mesh.SetUVs(0, allUVs);
-        mesh.SetTriangles(allTriangles.ToArray(),0);
-
-        return mesh;
-    }
-
-    public static void GenerateBlockFace(in Vector3 direction, out List<Vector3> vertices, out List<Vector3> normals, out int[] triangles)
-    {
-        vertices = new List<Vector3>();
-        normals = new List<Vector3>() { direction, direction, direction, direction };
-        triangles = new int[6]; // 2 Triangles
-
-        // Set vertices
-        float min = -0.5f;
-        float max = 0.5f;
-        vertices.Add(new Vector3(min, max, min));
-        vertices.Add(new Vector3(min, max, max));
-        vertices.Add(new Vector3(max, max, max));
-        vertices.Add(new Vector3(max, max, min));
-
-        Quaternion rot = Quaternion.FromToRotation(Vector3.up, direction);
-
-        Vector3 temp = direction;
-        temp.y = 0.0f;
-        if (Vector3.Dot(Vector3.forward, temp) > 0.99f)
-        {
-            Quaternion rot2 = Quaternion.AngleAxis(180f, Vector3.up);
-            rot = rot * rot2;
-        }
-        else if (temp.sqrMagnitude > 0.01f)
-        {
-            Quaternion rot2 = Quaternion.FromToRotation(Vector3.back, temp);
-            rot = rot * rot2;
-        }
-
-        for (int i = 0; i < vertices.Count; i++)
-        {
-            vertices[i] = rot * vertices[i];
-        }
-
-        // Set triangles
-        triangles[0] = 0;
-        triangles[1] = 1;
-        triangles[2] = 2;
-        triangles[3] = 0;
-        triangles[4] = 2;
-        triangles[5] = 3;
-    }
 }
