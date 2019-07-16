@@ -10,8 +10,8 @@ public class WorldChunk : MonoBehaviour
 
 
 
-    [Range(1,128)] public int width = 16;
-    [Range(1,64)] public int height = 32;
+    [Range(1,128)] public int _width = 16;
+    [Range(1,64)] public int _height = 32;
 
     protected Block[,,] _blocks;
 
@@ -19,27 +19,35 @@ public class WorldChunk : MonoBehaviour
 
     protected AtlasReader _atlasReader;
 
-    public void Initialize(int minX, int minZ)
+    public void Initialize(int minX, int minZ, int width, int height)
     {
         _minX = minX;
         _minZ = minZ;
 
-        _blocks = new Block[width, height, width];
+        this.transform.position = new Vector3(_minX, 0, _minZ);
+        this.gameObject.isStatic = true;
+
+        _width = width;
+        _height = height;
+
+        _blocks = new Block[_width, _height, _width];
 
         _atlasReader = new AtlasReader(blockAtlas, 32);
 
-        for (int x = 0; x < width; x++)
+        for (int x = 0; x < _width; x++)
         {
-            for (int z = 0; z < width; z++)
+            for (int z = 0; z < _width; z++)
             {
-                int noise = Mathf.FloorToInt(Mathf.PerlinNoise(1*(x+minX) /(float)width, 1*(z+minZ) / (float)width) * height*0.6f);
-                
-                noise += Mathf.FloorToInt(Mathf.PerlinNoise(3.2f + 1f * (x + minX) / (float)width, -4.85f + 1f * (z + minZ) / (float)width) * height * 0.5f);
-                //noise = Mathf.FloorToInt(noise + (height / 5.0f));
+                int noise = Mathf.FloorToInt(Mathf.PerlinNoise(1*(x+minX) /(float)_height, 1*(z+minZ) / (float)_height) * _height*0.6f);
 
-                for (int y = 0; y < height; y++)
+                //noise += Mathf.FloorToInt(Mathf.PerlinNoise(3.2f + 1f * (x + minX) / (float)_width, -4.85f + 1f * (z + minZ) / (float)_width) * _height * 0.5f);
+                noise = Mathf.FloorToInt(noise + 2);
+
+                for (int y = 0; y < _height; y++)
                 {
                     Block.Type type;
+
+                    int waterLevel = _height / 4;
 
                     if (y == 0)
                     {
@@ -53,9 +61,17 @@ public class WorldChunk : MonoBehaviour
                     {
                         type = Block.Type.Dirt;
                     }
-                    else if (y == noise)
+                    else if (y == noise && y >= waterLevel)
                     {
                         type = Block.Type.Grass;
+                    }
+                    else if (y == noise && y < waterLevel)
+                    {
+                        type = Block.Type.Sand;
+                    }
+                    else if (y <= waterLevel)
+                    {
+                        type = Block.Type.Water;
                     }
                     else
                     {
@@ -75,23 +91,14 @@ public class WorldChunk : MonoBehaviour
     {
         bool[,,] isExternalBlock = GetExternalBlockMatrix();
 
-        //Mesh mesh = Block.GenerateCube();
-
-        //Dictionary<Block.Type, Material> materialMap = new Dictionary<Block.Type, Material>()
-        //{
-        //    { Block.Type.Dirt, dirtMaterial },
-        //    { Block.Type.Stone, stoneMaterial },
-        //    { Block.Type.Bedrock, bedrockMaterial }
-        //};
-
         List<Mesh> meshes = new List<Mesh>();
         List<Matrix4x4> translations = new List<Matrix4x4>();
 
-        for (int i = 0; i < width; i++)
+        for (int i = 0; i < _width; i++)
         {
-            for (int j = 0; j < height; j++)
+            for (int j = 0; j < _height; j++)
             {
-                for (int k = 0; k < width; k++)
+                for (int k = 0; k < _width; k++)
                 {
                     if (isExternalBlock[i,j,k])
                     {
@@ -152,14 +159,13 @@ public class WorldChunk : MonoBehaviour
 
     public bool[,,] GetExternalBlockMatrix()
     {
-        Debug.Log("Getting external matrix...");
-        bool[,,] isExternalBlock = new bool[width, height, width];
+        bool[,,] isExternalBlock = new bool[_width, _height, _width];
 
-        for (int i = 0; i < width; i++)
+        for (int i = 0; i < _width; i++)
         {
-            for (int j = 0; j < height; j++)
+            for (int j = 0; j < _height; j++)
             {
-                for (int k = 0; k < width; k++)
+                for (int k = 0; k < _width; k++)
                 {
                     if (_blocks[i,j,k].type == Block.Type.Air)
                     {
@@ -179,15 +185,18 @@ public class WorldChunk : MonoBehaviour
                     foreach (Vector3Int coord in neighbors)
                     {
                         //Debug.Log(coord.ToString());
-                        hasTransparentNeighbor |= _blocks[coord.x, coord.y, coord.z].IsTransparent();
+                        if (_blocks[coord.x, coord.y, coord.z].IsTransparent())
+                        {
+                            hasTransparentNeighbor = true;
+                            break;
+                        }
+                        //hasTransparentNeighbor |= _blocks[coord.x, coord.y, coord.z].IsTransparent();
                     }
 
                     isExternalBlock[i, j, k] = hasTransparentNeighbor;
                 }
             }
         }
-
-        Debug.Log("Got external matrix!");
 
         return isExternalBlock;
     }
@@ -199,7 +208,7 @@ public class WorldChunk : MonoBehaviour
         {
             neighbors.Add(new Vector3Int(i - 1, j, k));
         }
-        if (i != width-1)
+        if (i != _width-1)
         {
             neighbors.Add(new Vector3Int(i + 1, j, k));
         }
@@ -208,7 +217,7 @@ public class WorldChunk : MonoBehaviour
         {
             neighbors.Add(new Vector3Int(i, j - 1, k));
         }
-        if (j != height-1)
+        if (j != _height-1)
         {
             neighbors.Add(new Vector3Int(i, j + 1, k));
         }
@@ -217,7 +226,7 @@ public class WorldChunk : MonoBehaviour
         {
             neighbors.Add(new Vector3Int(i, j, k - 1));
         }
-        if (k != width - 1)
+        if (k != _width - 1)
         {
             neighbors.Add(new Vector3Int(i, j, k + 1));
         }
@@ -229,24 +238,26 @@ public class WorldChunk : MonoBehaviour
     {
         bool[] visibility = new bool[6];
 
-        visibility[0] = (j == height - 1) || _blocks[i, j + 1, k].IsTransparent();
-        visibility[1] = (j == 0) || _blocks[i, j - 1, k].IsTransparent();
-        visibility[2] = (i == width - 1) || _blocks[i + 1, j, k].IsTransparent();
-        visibility[3] = (i == 0) || _blocks[i - 1, j, k].IsTransparent();
-        visibility[4] = (k == width - 1) || _blocks[i, j, k + 1].IsTransparent();
-        visibility[5] = (k == 0) || _blocks[i, j, k - 1].IsTransparent();
+        Block.Type type = _blocks[i, j, k].type;
+
+        visibility[0] = (j == _height - 1) || (_blocks[i, j + 1, k].IsTransparent() && _blocks[i, j + 1, k].type != type);
+        visibility[1] = (j == 0) || (_blocks[i, j - 1, k].IsTransparent() && _blocks[i, j - 1, k].type != type);
+        visibility[2] = (i == _width - 1) || (_blocks[i + 1, j, k].IsTransparent() && _blocks[i + 1, j, k].type != type);
+        visibility[3] = (i == 0) || (_blocks[i - 1, j, k].IsTransparent() && _blocks[i - 1, j, k].type != type);
+        visibility[4] = (k == _width - 1) || (_blocks[i, j, k + 1].IsTransparent() && _blocks[i, j, k + 1].type != type);
+        visibility[5] = (k == 0) || (_blocks[i, j, k - 1].IsTransparent() && _blocks[i, j, k - 1].type != type);
 
         return visibility;
     }
 
-    public void Start()
-    {
-        int x = Mathf.FloorToInt(this.transform.position.x);
-        int z = Mathf.FloorToInt(this.transform.position.z);
-        Initialize(x, z);
+    //public void Start()
+    //{
+    //    int x = Mathf.FloorToInt(this.transform.position.x);
+    //    int z = Mathf.FloorToInt(this.transform.position.z);
+    //    Initialize(x, z);
 
-        this.BuildMesh();
-    }
+    //    this.BuildMesh();
+    //}
 
     public void Update()
     {
@@ -273,7 +284,9 @@ public class Block
         Grass,
         Dirt,
         Stone,
-        Bedrock
+        Bedrock,
+        Water,
+        Sand
     }
 
     public static Vector3[] FACE_DIRECTIONS = {
@@ -294,7 +307,7 @@ public class Block
 
     public bool IsTransparent()
     {
-        return this.type == Type.Air;
+        return this.type == Type.Air || this.type == Type.Water;
     }
 
     public static Mesh GenerateCube()
@@ -397,6 +410,10 @@ public class Block
             List<Vector2> uvs;
             switch (type)
             {
+                case Type.Sand:
+                    Debug.Log("SAND");
+                    uvs = atlasReader.GetUVs(4, 0);
+                    break;
                 case Type.Bedrock:
                     uvs = atlasReader.GetUVs(3, 0);
                     break;
@@ -417,6 +434,9 @@ public class Block
                     {
                         uvs = atlasReader.GetUVs(0, 1);
                     }
+                    break;
+                case Type.Water:
+                    uvs = atlasReader.GetUVs(0, 2);
                     break;
                 default:
                     uvs = atlasReader.GetUVs(0, 0);
