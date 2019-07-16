@@ -1,0 +1,13 @@
+
+Minecraft/Library/*
+Minecraft/ProjectSettings/*
+Minecraft/Temp/*
+Minecraft/Logs/*
+Minecraft/Packages/*
+Minecraft/obj/*
+
+Minecraft/.vs/*
+Minecraft/Minecraft.sln
+Minecraft/Assembly-CSharp.csproj
+
+
