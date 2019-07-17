@@ -42,20 +42,21 @@ public class Block
 
     //}
 
-    public Block(string typeName)
+    public Block(BlockType type)
     {
+        this.type = type;
         //this.type = type;
 
         // Temp
         //string typeName = type.ToString();
-        foreach (BlockType blockType in BLOCK_TYPES)
-        {
-            if (blockType.displayName == typeName)
-            {
-                this.type = blockType;
-                break;
-            }
-        }
+        //foreach (BlockType blockType in BLOCK_TYPES)
+        //{
+        //    if (blockType.displayName == typeName)
+        //    {
+        //        this.type = blockType;
+        //        break;
+        //    }
+        //}
     }
 
     public bool IsTransparent()

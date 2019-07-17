@@ -10,4 +10,5 @@ Minecraft/.vs/*
 Minecraft/Minecraft.sln
 Minecraft/Assembly-CSharp.csproj
 
+Audio/*
 

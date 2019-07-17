@@ -9,10 +9,11 @@ public class ChunkManager : MonoBehaviour
     [Range(4, 32)] public int chunkWidth = 16;
     [Range(4, 64)] public int chunkHeight = 32;
 
-    public Texture2D blockAtlas;
+    private Texture2D blockAtlas;
     public Material chunkOpaqueMaterial;
     public Material chunkFadeMaterial;
 
+    private Queue<WorldChunk> _chunkBuildQueue;
 
     [SerializeField] private Dictionary<Vector2Int, WorldChunk> _chunks;
 
@@ -20,24 +21,45 @@ public class ChunkManager : MonoBehaviour
 
     private void Start()
     {
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 30;
         Initialize();
     }
 
     public void Initialize()
     {
+        _chunkBuildQueue = new Queue<WorldChunk>();
         _chunks = new Dictionary<Vector2Int, WorldChunk>();
-
+        
         _prevPlayerChunk = Vector2Int.one * int.MaxValue;
 
+        blockAtlas = (UnityEngine.Texture2D)chunkOpaqueMaterial.GetTexture("_MainTex");
+
         UpdateLoadedChunks();
+
+        ForceBuildAllChunks();
     }
 
-    public void Update()
+    private void ForceBuildAllChunks()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
+        while (_chunkBuildQueue.Count > 0)
         {
-            UpdateLoadedChunks();
+            BuildNextChunk();
         }
+    }
+
+    private void Update()
+    {
+        if (_chunkBuildQueue.Count > 0)
+        {
+            BuildNextChunk();
+        }
+    }
+
+    private void BuildNextChunk()
+    {
+        WorldChunk chunk = _chunkBuildQueue.Dequeue();
+        chunk.BuildMesh();
     }
 
     public void UpdateLoadedChunks()
@@ -54,17 +76,12 @@ public class ChunkManager : MonoBehaviour
 
         List<Vector2Int> chunksPositionsToLoad = GetInRangeChunkPositions(playerChunkPos, loadDistance);
 
-        //Debug.Log("Player:" + playerPos);
-        //Debug.Log("Neighbor Count: " + chunksPositionsToLoad.Count);
-
         foreach (Vector2Int pos in chunksPositionsToLoad)
         {
-            //Debug.Log(pos);
             LoadChunk(pos);
         }
 
         // Unload
-        //List<WorldChunk> chunksToUnload = new List<WorldChunk>();
         foreach (Vector2Int pos in _chunks.Keys)
         {
             // TODO: Use a set for faster contains check
@@ -83,13 +100,11 @@ public class ChunkManager : MonoBehaviour
 
     public void LoadChunk(Vector2Int pos)
     {
-        
         if (_chunks.ContainsKey(pos) == false)
         {
-            _chunks.Add(pos, CreateChunk(pos));
-        } else
-        {
-            Debug.Log("Using Cached Chunk");
+            WorldChunk newChunk = InitializeChunk(pos);
+            _chunks.Add(pos, newChunk);
+            _chunkBuildQueue.Enqueue(newChunk);
         }
 
         WorldChunk chunk = _chunks[pos];
@@ -97,7 +112,7 @@ public class ChunkManager : MonoBehaviour
         chunk.gameObject.SetActive(true);
     }
 
-    public WorldChunk CreateChunk(Vector2Int pos)
+    public WorldChunk InitializeChunk(Vector2Int pos)
     {
         GameObject go = new GameObject("Chunk [" + pos.x + "," + pos.y + "]");
         go.transform.parent = this.transform;
@@ -110,7 +125,7 @@ public class ChunkManager : MonoBehaviour
 
         chunk.Initialize(pos.x, pos.y, chunkWidth, chunkHeight);
 
-        chunk.BuildMesh();
+        //chunk.BuildMesh();
 
         return chunk;
     }
@@ -162,5 +177,7 @@ public class ChunkManager : MonoBehaviour
         int z = (int)player.transform.position.z;
         return new Vector2Int(x, z);
     }
+
+
 
 }
