@@ -259,8 +259,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 1253456488}
-  loadDistance: 6
-  chunkWidth: 16
+  loadDistance: 3
+  chunkWidth: 32
   chunkHeight: 30
   chunkOpaqueMaterial: {fileID: 2100000, guid: ba6d2a2d180fd4e42b4842e600554a74, type: 2}
   chunkFadeMaterial: {fileID: 2100000, guid: 473e63a8ecc2745379c9255b80882d3f, type: 2}
@@ -390,7 +390,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1253456487}
-  m_RootOrder: 2
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!81 &1074480765
 AudioListener:
@@ -399,7 +399,7 @@ AudioListener:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1074480763}
-  m_Enabled: 1
+  m_Enabled: 0
 --- !u!20 &1074480766
 Camera:
   m_ObjectHideFlags: 0
@@ -553,8 +553,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1969729315}
-  - {fileID: 2051302010}
   - {fileID: 1074480764}
+  - {fileID: 2051302010}
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -728,7 +728,7 @@ GameObject:
   - component: {fileID: 1969729317}
   - component: {fileID: 1969729316}
   m_Layer: 0
-  m_Name: Camera
+  m_Name: Follow Camera
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -826,7 +826,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1253456487}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2102407616
 GameObject:

@@ -62,7 +62,7 @@ public class Block
     public bool IsTransparent()
     {
         //return this.type == Type.Air || this.type == Type.Water;
-        return this.type.isTransparent;
+        return this.type == null || this.type.isTransparent;
     }
 
     public static Mesh GenerateCube()
@@ -253,5 +253,17 @@ public class Block
         triangles[3] = 0;
         triangles[4] = 2;
         triangles[5] = 3;
+    }
+
+    public static BlockType GetBlockTypeByName(string name)
+    {
+        foreach (BlockType type in BLOCK_TYPES)
+        {
+            if (type.displayName == name)
+            {
+                return type;
+            }
+        }
+        return null;
     }
 }

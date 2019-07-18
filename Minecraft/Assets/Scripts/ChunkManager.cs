@@ -162,6 +162,8 @@ public class ChunkManager : MonoBehaviour
     private Vector2Int GetNearestChunkPosition(Vector2Int pos)
     {
         pos -= Vector2Int.one * (chunkWidth / 2);
+        //pos -= Vector2Int.one * (chunkWidth);
+
         int xi = pos.x / chunkWidth;
         int zi = pos.y / chunkWidth;
 
@@ -171,6 +173,17 @@ public class ChunkManager : MonoBehaviour
         return new Vector2Int(x, z);
     }
 
+    private WorldChunk GetNearestChunk(Vector2Int pos)
+    {
+        Vector2Int nearestPos = GetNearestChunkPosition(pos);
+        if (_chunks.ContainsKey(nearestPos) == false)
+        {
+            return null;
+        }
+
+        return _chunks[nearestPos];
+    }
+
     private Vector2Int GetPlayerPosition()
     {
         int x = (int)player.transform.position.x;
@@ -178,6 +191,20 @@ public class ChunkManager : MonoBehaviour
         return new Vector2Int(x, z);
     }
 
+    public void UpdateBlocks(List<Vector3Int> positions, List<Block> newBlocks)
+    {
+        HashSet<WorldChunk> relevantChunks = new HashSet<WorldChunk>();
 
+        foreach(Vector3Int pos in positions)
+        {
+            Vector2Int pos2D = new Vector2Int(pos.x, pos.z);
+            relevantChunks.Add(GetNearestChunk(pos2D));
+        }
+
+        foreach(WorldChunk chunk in relevantChunks)
+        {
+            chunk.UpdateBlocks(positions, newBlocks);
+        }
+    }
 
 }

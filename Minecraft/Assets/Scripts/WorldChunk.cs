@@ -84,11 +84,11 @@ public class WorldChunk : MonoBehaviour
         {
             type = "Dirt";
         }
-        else if (y == noise && y >= waterLevel)
+        else if (y == noise && y > waterLevel)
         {
             type = "Grass";
         }
-        else if (y == noise && y < waterLevel)
+        else if (y == noise && y <= waterLevel)
         {
             type = "Sand";
         }
@@ -159,13 +159,25 @@ public class WorldChunk : MonoBehaviour
 
         final.CombineMeshes(combine, true);
 
-        GameObject go = new GameObject("Mesh (Opaque)");
-        go.isStatic = true;
-        go.transform.parent = this.transform;
-        go.transform.localPosition = new Vector3(0,0,0);
-        MeshFilter mf = go.AddComponent<MeshFilter>();
-        MeshRenderer mr = go.AddComponent<MeshRenderer>();
-        MeshCollider mc = go.AddComponent<MeshCollider>();
+        string childName = "Mesh (Opaque)";
+        GameObject go = transform.Find(childName)?.gameObject;
+        if (go == null)
+        {
+            go = new GameObject(childName)
+            {
+                isStatic = true
+            };
+            go.transform.parent = this.transform;
+            go.transform.localPosition = new Vector3(0, 0, 0);
+        }
+
+        MeshFilter mf = go.GetComponent<MeshFilter>();
+        MeshRenderer mr = go.GetComponent<MeshRenderer>();
+        MeshCollider mc = go.GetComponent<MeshCollider>();
+
+        mf = mf == null ? go.AddComponent<MeshFilter>() : mf;
+        mr = mr == null ? go.AddComponent<MeshRenderer>() : mr;
+        mc = mc == null ? go.AddComponent<MeshCollider>() : mc;
 
         mf.sharedMesh = final;
         mr.sharedMaterial = chunkOpaqueMaterial;
@@ -190,7 +202,7 @@ public class WorldChunk : MonoBehaviour
                 {
                     Block block = _blocks[i, j, k];
 
-                    if (isExternalBlock[i, j, k] && block.type.displayName == "Water")
+                    if (isExternalBlock[i, j, k] && block.type != null && block.type.displayName == "Water")
                     {
                         bool[] visibility = GetVisibility(i, j, k);
 
@@ -214,14 +226,30 @@ public class WorldChunk : MonoBehaviour
 
         final.CombineMeshes(combine, true);
 
-        GameObject go = new GameObject("Mesh (Water)");
-        go.isStatic = true;
-        go.transform.parent = this.transform;
-        go.transform.localPosition = new Vector3(0, -0.0625f, 0); // Shift down to create gap between shore and the water's surface.
-        go.tag = "Water";
-        MeshFilter mf = go.AddComponent<MeshFilter>();
-        MeshRenderer mr = go.AddComponent<MeshRenderer>();
-        MeshCollider mc = go.AddComponent<MeshCollider>();
+        string childName = "Mesh (Water)";
+        GameObject go = transform.Find(childName)?.gameObject;
+        if (go == null)
+        {
+            go = new GameObject(childName)
+            {
+                isStatic = true
+            };
+            go.transform.parent = this.transform;
+            go.transform.localPosition = new Vector3(0, -0.0625f, 0);// Shift down to create gap between shore and the water's surface.
+            go.tag = "Water";
+        }
+
+        //GameObject go = new GameObject("Mesh (Water)");
+        //go.isStatic = true;
+        //go.transform.parent = this.transform;
+        //go.transform.localPosition = new Vector3(0, -0.0625f, 0); // Shift down to create gap between shore and the water's surface.
+        MeshFilter mf = go.GetComponent<MeshFilter>();
+        MeshRenderer mr = go.GetComponent<MeshRenderer>();
+        MeshCollider mc = go.GetComponent<MeshCollider>();
+
+        mf = mf == null ? go.AddComponent<MeshFilter>() : mf;
+        mr = mr == null ? go.AddComponent<MeshRenderer>() : mr;
+        mc = mc == null ? go.AddComponent<MeshCollider>() : mc;
 
         mf.sharedMesh = final;
         mr.sharedMaterial = chunkFadeMaterial;
@@ -327,11 +355,76 @@ public class WorldChunk : MonoBehaviour
         for (int ni = 0; ni < neighbors.Length; ni++)
         {
             Vector3Int npos = neighbors[ni];
-            BlockType ntype = GetBlockType(npos.x + _minX, npos.y, npos.z + _minZ, _height);
+            BlockType ntype;
+            if (LocalPositionInRange(npos))
+            {
+                Block block = _blocks[npos.x, npos.y, npos.z];
+                ntype = block == null ? null : block.type;
+            } else
+            {
+                ntype = GetBlockType(npos.x + _minX, npos.y, npos.z + _minZ, _height);
+            }
             visibility[ni] = (ntype == null || ntype.isTransparent) && (type != ntype);
         }
 
         return visibility;
+    }
+
+    private Vector3Int WorldToLocalPosition(Vector3Int worldPos)
+    {
+        int x = worldPos.x - _minX;
+        int y = worldPos.y;
+        int z = worldPos.z - _minZ;
+
+        Vector3Int localPos = new Vector3Int(x,y,z);
+        return localPos;
+    }
+
+    private bool LocalPositionInRange(Vector3Int localPos)
+    {
+        return localPos.x >= 0 && localPos.z >= 0 && localPos.x < _width && localPos.z < _width && localPos.y >= 0 && localPos.y < _height;
+    }
+
+    public void UpdateBlocks(List<Vector3Int> positions, List<Block> newBlocks)
+    {
+        bool shouldRebuild = false;
+
+        for (int i = 0; i < positions.Count; i++)
+        {
+            Vector3Int worldPos = positions[i];
+            Vector3Int localPos = WorldToLocalPosition(worldPos);
+            if (LocalPositionInRange(localPos))
+            {
+                Block newBlock = newBlocks[i].type == null ? null : newBlocks[i];
+                Block currBlock = _blocks[localPos.x, localPos.y, localPos.z];
+
+                BlockType currType = currBlock == null ? null : currBlock.type;
+                BlockType newType = newBlock == null ? null : newBlock.type;
+                if (currType != newType)
+                {
+                    _blocks[localPos.x, localPos.y, localPos.z] = newBlock;
+                    shouldRebuild = true;
+                }
+            }
+            
+        }
+
+        if (shouldRebuild)
+        {
+            Debug.Log("Rebuilding...");
+            //Transform child = transform.Find("Mesh (Opaque)");
+            //child.name = "TO DESTROY";
+            //Destroy(child.gameObject);
+            BuildMesh(); //TODO: Add chunk to build queue instead
+        }
+    }
+
+    public void Highlight(Color color)
+    {
+        Vector3 chunkCenter = new Vector3(_minX + _width/2, _height/2, _minZ + _width/2);
+        Gizmos.color = color;
+        Gizmos.DrawCube(chunkCenter, new Vector3(_width, _height, _width));
+        Debug.DrawLine(chunkCenter + Vector3.down * 20, chunkCenter + Vector3.up * 20, color);
     }
 
 }

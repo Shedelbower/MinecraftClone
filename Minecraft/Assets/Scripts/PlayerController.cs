@@ -30,6 +30,11 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            Boom();
+        }
+
         if (Input.GetKey(KeyCode.W))
         {
             characterController.SimpleMove(this.transform.forward * _speed);
@@ -59,7 +64,7 @@ public class PlayerController : MonoBehaviour
             if (_prevType != currentType)
             {
                 string blockTypeName = currentType == null ? "Air" : currentType.displayName;
-                Debug.Log(blockTypeName);
+                //Debug.Log(blockTypeName);
 
                 if (currentType != null && currentType.displayName == "Water")
                 {
@@ -78,6 +83,43 @@ public class PlayerController : MonoBehaviour
 
         }
     }
+
+    private void Boom()
+    {
+        Vector3Int center = Vector3Int.CeilToInt(this.feet.position);
+
+        //TEMP
+        GameObject go = Instantiate(splashEffect) as GameObject;
+        Destroy(go, 3);
+        go.transform.position = this.feet.position;
+
+        int blastRadius = 2;
+
+        List<Vector3Int> positions = new List<Vector3Int>();
+
+        for (int x = -blastRadius; x <= blastRadius; x++)
+        {
+            for (int y = -blastRadius; y <= blastRadius; y++)
+            {
+                for (int z = -blastRadius; z <= blastRadius; z++)
+                {
+                    Vector3Int pos = new Vector3Int(x, y, z) + center;
+                    positions.Add(pos);
+                }
+            }
+        }
+
+        List<Block> replacements = new List<Block>();
+        BlockType airType = Block.GetBlockTypeByName("Air");
+        for (int i = 0; i < positions.Count; i++)
+        {
+            Block replacement = new Block(airType);
+            replacements.Add(replacement);
+        }
+
+        chunkManager.UpdateBlocks(positions, replacements);
+    }
+
 
     //private void OnTriggerEnter(Collider other)
     //{
