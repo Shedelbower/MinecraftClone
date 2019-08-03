@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28a08073b11cc4289a3c8ab2936eedeb, type: 3}
   m_Name: Sand
   m_EditorClassIdentifier: 
-  displayName: Sand
+  index: 0
+  name: Sand
   atlasPositions:
   - {x: 0, y: 2}
   isTransparent: 0

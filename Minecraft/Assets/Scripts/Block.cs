@@ -5,23 +5,7 @@ using UnityEngine;
 
 public class Block
 {
-    //public static readonly Dictionary<string, BlockType> BLOCK_TYPES = new Dictionary<string, BlockType>();
-
-
-    public enum Type
-    {
-        Air,
-        Grass,
-        Dirt,
-        Stone,
-        Bedrock,
-        Water,
-        Sand
-    }
-
-    public static BlockType[] BLOCK_TYPES = Resources.LoadAll<BlockType>("Block Types");
-
-
+    /*------------------------ STATIC VARIABLES ------------------------*/
 
     public static readonly Vector3[] FACE_DIRECTIONS = {
         Vector3.up,
@@ -32,118 +16,27 @@ public class Block
         Vector3.back
     };
 
+    /*------------------------ MEMBER VARIABLES ------------------------*/
+
     public BlockType type;
 
-    //public Type type;
+    /*------------------------ CONSTRUCTORS ------------------------*/
 
-    //private static Dictionary<string, BlockType> LoadBlockTypes()
-    //{
-    //    Dictionary<string, BlockType> types = new Dictionary<string, BlockType>();
+    public Block(int index) : this(BlockType.GetBlockType(index)) { }
 
-    //}
+    public Block(string name) : this(BlockType.GetBlockType(name)) {}
 
     public Block(BlockType type)
     {
         this.type = type;
-        //this.type = type;
-
-        // Temp
-        //string typeName = type.ToString();
-        //foreach (BlockType blockType in BLOCK_TYPES)
-        //{
-        //    if (blockType.displayName == typeName)
-        //    {
-        //        this.type = blockType;
-        //        break;
-        //    }
-        //}
     }
+
+    /*------------------------ PUBLIC METHODS ------------------------*/
 
     public bool IsTransparent()
     {
         //return this.type == Type.Air || this.type == Type.Water;
         return this.type == null || this.type.isTransparent;
-    }
-
-    public static Mesh GenerateCube()
-    {
-        Vector3[] directions = {
-            Vector3.up,
-            Vector3.down,
-            Vector3.forward,
-            Vector3.back,
-            Vector3.left,
-            Vector3.right
-        };
-
-        CombineInstance[] combine = new CombineInstance[directions.Length];
-
-        for (int i = 0; i < combine.Length; i++)
-        {
-            combine[i].mesh = GenerateQuad(directions[i]);
-            //Debug.Log(combine[i].mesh.vertexCount);
-            combine[i].transform = Matrix4x4.identity;
-        }
-        Mesh mesh = new Mesh();
-        mesh.CombineMeshes(combine, true);
-
-        return mesh;
-    }
-
-    public static Mesh GenerateQuad(Vector3 direction)
-    {
-        List<Vector3> vertices = new List<Vector3>();
-        //List<Vector2> uvs = new List<Vector2>();
-        int[] triangles = new int[6];
-
-        float min = -0.5f;
-        float max = 0.5f;
-        vertices.Add(new Vector3(min, max, min));
-        vertices.Add(new Vector3(min, max, max));
-        vertices.Add(new Vector3(max, max, max));
-        vertices.Add(new Vector3(max, max, min));
-
-        Quaternion rot = Quaternion.FromToRotation(Vector3.up, direction);
-
-        Vector3 temp = direction;
-        temp.y = 0.0f;
-        if (Vector3.Dot(Vector3.forward, temp) > 0.99f)
-        {
-            Quaternion rot2 = Quaternion.AngleAxis(180f, Vector3.up);
-            rot = rot * rot2;
-        }
-        else if (temp.sqrMagnitude > 0.01f)
-        {
-            Quaternion rot2 = Quaternion.FromToRotation(Vector3.back, temp);
-            rot = rot * rot2;
-        }
-
-        for (int i = 0; i < vertices.Count; i++)
-        {
-            vertices[i] = rot * vertices[i];
-        }
-
-
-
-        //uvs.Add(new Vector2(0f, 0f));
-        //uvs.Add(new Vector2(0f, 1f));
-        //uvs.Add(new Vector2(1f, 1f));
-        //uvs.Add(new Vector2(1f, 0f));
-
-        triangles[0] = 0;
-        triangles[1] = 1;
-        triangles[2] = 2;
-        triangles[3] = 0;
-        triangles[4] = 2;
-        triangles[5] = 3;
-
-        Mesh mesh = new Mesh();
-        mesh.SetVertices(vertices);
-        //mesh.SetUVs(0, uvs);
-        mesh.SetTriangles(triangles, 0);
-        mesh.RecalculateNormals();
-
-        return mesh;
     }
 
     public Mesh GenerateFaces(bool[] faceIsVisible, AtlasReader atlasReader)
@@ -166,7 +59,7 @@ public class Block
             int index = atlasPositions.Length == 1 ? 0 : i;
 
             List<Vector2> uvs = atlasReader.GetUVs(atlasPositions[index].x, atlasPositions[index].y);
-            
+
 
             vertexLists.Add(vertices);
             normalLists.Add(normals);
@@ -212,6 +105,79 @@ public class Block
         return mesh;
     }
 
+    /*------------------------ STATIC METHODS ------------------------*/
+
+    public static Mesh GenerateCube()
+    {
+        Vector3[] directions = {
+            Vector3.up,
+            Vector3.down,
+            Vector3.forward,
+            Vector3.back,
+            Vector3.left,
+            Vector3.right
+        };
+
+        CombineInstance[] combine = new CombineInstance[directions.Length];
+
+        for (int i = 0; i < combine.Length; i++)
+        {
+            combine[i].mesh = GenerateQuad(directions[i]);
+            combine[i].transform = Matrix4x4.identity;
+        }
+        Mesh mesh = new Mesh();
+        mesh.CombineMeshes(combine, true);
+
+        return mesh;
+    }
+
+    public static Mesh GenerateQuad(Vector3 direction)
+    {
+        List<Vector3> vertices = new List<Vector3>();
+        int[] triangles = new int[6];
+
+        float min = -0.5f;
+        float max = 0.5f;
+        vertices.Add(new Vector3(min, max, min));
+        vertices.Add(new Vector3(min, max, max));
+        vertices.Add(new Vector3(max, max, max));
+        vertices.Add(new Vector3(max, max, min));
+
+        Quaternion rot = Quaternion.FromToRotation(Vector3.up, direction);
+
+        Vector3 temp = direction;
+        temp.y = 0.0f;
+        if (Vector3.Dot(Vector3.forward, temp) > 0.99f)
+        {
+            Quaternion rot2 = Quaternion.AngleAxis(180f, Vector3.up);
+            rot = rot * rot2;
+        }
+        else if (temp.sqrMagnitude > 0.01f)
+        {
+            Quaternion rot2 = Quaternion.FromToRotation(Vector3.back, temp);
+            rot = rot * rot2;
+        }
+
+        for (int i = 0; i < vertices.Count; i++)
+        {
+            vertices[i] = rot * vertices[i];
+        }
+
+        triangles[0] = 0;
+        triangles[1] = 1;
+        triangles[2] = 2;
+        triangles[3] = 0;
+        triangles[4] = 2;
+        triangles[5] = 3;
+
+        Mesh mesh = new Mesh();
+        mesh.SetVertices(vertices);
+        mesh.SetTriangles(triangles, 0);
+        mesh.RecalculateNormals();
+
+        return mesh;
+    }
+
     public static void GenerateBlockFace(in Vector3 direction, out List<Vector3> vertices, out List<Vector3> normals, out int[] triangles)
     {
         vertices = new List<Vector3>();
@@ -253,17 +219,5 @@ public class Block
         triangles[3] = 0;
         triangles[4] = 2;
         triangles[5] = 3;
-    }
-
-    public static BlockType GetBlockTypeByName(string name)
-    {
-        foreach (BlockType type in BLOCK_TYPES)
-        {
-            if (type.displayName == name)
-            {
-                return type;
-            }
-        }
-        return null;
     }
 }

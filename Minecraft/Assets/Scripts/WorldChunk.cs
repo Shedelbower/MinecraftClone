@@ -5,43 +5,38 @@ using UnityEngine;
 
 public class WorldChunk : MonoBehaviour
 {
+    public bool highlight = true;
+    public ChunkManager chunkManager;
+
     public Texture2D blockAtlas;
     public Material chunkOpaqueMaterial;
     public Material chunkFadeMaterial;
 
+    public Vector3Int _size = Vector3Int.one * 16;
 
-
-    [Range(1,128)] public int _width = 16;
-    [Range(1,64)] public int _height = 32;
-
+    protected Vector3Int _minCorner;
     protected Block[,,] _blocks;
-
-    protected int _minX, _minZ;
-
     protected AtlasReader _atlasReader;
 
-    public void Initialize(int minX, int minZ, int width, int height)
+    public void Initialize(Vector3Int minCorner, Vector3Int size)
     {
-        _minX = minX;
-        _minZ = minZ;
+        _size = size;
+        _minCorner = minCorner;
 
-        this.transform.position = new Vector3(_minX, 0, _minZ);
+        this.transform.position = minCorner;
         this.gameObject.isStatic = true;
 
-        _width = width;
-        _height = height;
-
-        _blocks = new Block[_width, _height, _width];
+        _blocks = new Block[size.x, size.y, size.z];
 
         _atlasReader = new AtlasReader(blockAtlas, 32);
 
-        for (int x = 0; x < _width; x++)
+        for (int x = 0; x < _size.x; x++)
         {
-            for (int z = 0; z < _width; z++)
+            for (int z = 0; z < _size.z; z++)
             {
-                for (int y = 0; y < _height; y++)
+                for (int y = 0; y < _size.y; y++)
                 {
-                    BlockType type = GetBlockType(x + _minX, y, z + _minZ, _height);
+                    BlockType type = GetBlockType(x + _minCorner.x, y + _minCorner.y, z + _minCorner.z);
 
                     if (type != null)
                     {
@@ -51,67 +46,71 @@ public class WorldChunk : MonoBehaviour
             }
         }
 
-        Debug.Log("Initialized Chunk");
+        Debug.Log("Initialized Blocks in Chunk");
     }
 
-    public static BlockType GetBlockType(Vector3 pos, int height)
+    public static BlockType GetBlockType(Vector3 pos)
     {
         int x = Mathf.RoundToInt(pos.x);
         int y = Mathf.RoundToInt(pos.y);
         int z = Mathf.RoundToInt(pos.z);
-        return GetBlockType(x,y,z, height);
+        return GetBlockType(x,y,z);
     }
 
-    public static BlockType GetBlockType(int x, int y, int z, int height)
+    public BlockType ReadBlockType(Vector3Int worldPos)
     {
-        int noise = Mathf.FloorToInt(Mathf.PerlinNoise(1 * (x) / (float)height, 1 * (z) / (float)height) * height * 0.6f);
-        noise = Mathf.FloorToInt(noise + 2);
+        Vector3Int localPos = WorldToLocalPosition(worldPos);
+        Block block = _blocks[localPos.x, localPos.y, localPos.z];
+        BlockType type = block == null ? BlockType.GetBlockType("Air") : block.type;
+        return type;
+    }
 
-        //Block.Type type;
-        string type;
+    public static BlockType GetBlockType(int x, int y, int z)
+    {
+        Vector2Int offset = new Vector2Int(10000, 100000);
+        int noise = Mathf.FloorToInt(Mathf.PerlinNoise(1 * (x) / (float)32 + offset.x, 1 * (z) / (float)32 + offset.y) * 30);
+        noise += 30;
 
-        int waterLevel = height / 4;
+        BlockType type;
 
-        if (y == 0)
+        int waterLevel = 35;
+
+        if (y <= 0)
         {
-            type = "Bedrock";
+            type = BlockType.GetBlockType("Bedrock");
         }
         else if (y < noise - 3)
         {
-            type = "Stone";
+            type = BlockType.GetBlockType("Stone");
+
+            if (Random.value < 0.1f)
+            {
+                type = BlockType.GetBlockType("Iron Ore");
+            }
+
         }
         else if (y < noise)
         {
-            type = "Dirt";
+            type = BlockType.GetBlockType("Dirt");
         }
         else if (y == noise && y > waterLevel)
         {
-            type = "Grass";
+            type = BlockType.GetBlockType("Grass");
         }
         else if (y == noise && y <= waterLevel)
         {
-            type = "Sand";
+            type = BlockType.GetBlockType("Sand");
         }
         else if (y <= waterLevel)
         {
-            type = "Water";
+            type = BlockType.GetBlockType("Water");
         }
         else
         {
-            type = "";
+            type = null;
         }
 
-        BlockType blockType = null;
-        foreach (BlockType btype in Block.BLOCK_TYPES)
-        {
-            if (btype.displayName == type)
-            {
-                blockType = btype;
-                break;
-            }
-        }
-
-        return blockType;
+        return type;
     }
 
     public void BuildMesh()
@@ -127,11 +126,11 @@ public class WorldChunk : MonoBehaviour
         List<Mesh> meshes = new List<Mesh>();
         List<Matrix4x4> translations = new List<Matrix4x4>();
 
-        for (int i = 0; i < _width; i++)
+        for (int i = 0; i < _size.x; i++)
         {
-            for (int j = 0; j < _height; j++)
+            for (int j = 0; j < _size.y; j++)
             {
-                for (int k = 0; k < _width; k++)
+                for (int k = 0; k < _size.z; k++)
                 {
                     Block block = _blocks[i, j, k];
 
@@ -181,6 +180,7 @@ public class WorldChunk : MonoBehaviour
 
         mf.sharedMesh = final;
         mr.sharedMaterial = chunkOpaqueMaterial;
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
         mc.sharedMesh = mf.sharedMesh;
 
         return final;
@@ -194,15 +194,15 @@ public class WorldChunk : MonoBehaviour
         List<Mesh> meshes = new List<Mesh>();
         List<Matrix4x4> translations = new List<Matrix4x4>();
 
-        for (int i = 0; i < _width; i++)
+        for (int i = 0; i < _size.x; i++)
         {
-            for (int j = 0; j < _height; j++)
+            for (int j = 0; j < _size.y; j++)
             {
-                for (int k = 0; k < _width; k++)
+                for (int k = 0; k < _size.z; k++)
                 {
                     Block block = _blocks[i, j, k];
 
-                    if (isExternalBlock[i, j, k] && block.type != null && block.type.displayName == "Water")
+                    if (isExternalBlock[i, j, k] && block.type != null && block.type.name == "Water")
                     {
                         bool[] visibility = GetVisibility(i, j, k);
 
@@ -253,6 +253,7 @@ public class WorldChunk : MonoBehaviour
 
         mf.sharedMesh = final;
         mr.sharedMaterial = chunkFadeMaterial;
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
         mc.sharedMesh = mf.sharedMesh;
         mc.convex = true; // TODO: Temporary fix
         mc.isTrigger = true;
@@ -262,13 +263,13 @@ public class WorldChunk : MonoBehaviour
 
     public bool[,,] GetExternalBlockMatrix()
     {
-        bool[,,] isExternalBlock = new bool[_width, _height, _width];
+        bool[,,] isExternalBlock = new bool[_size.x, _size.y, _size.z];
 
-        for (int i = 0; i < _width; i++)
+        for (int i = 0; i < _size.x; i++)
         {
-            for (int j = 0; j < _height; j++)
+            for (int j = 0; j < _size.y; j++)
             {
-                for (int k = 0; k < _width; k++)
+                for (int k = 0; k < _size.z; k++)
                 {
                     if (_blocks[i,j,k] == null)
                     {
@@ -310,7 +311,7 @@ public class WorldChunk : MonoBehaviour
         {
             neighbors.Add(new Vector3Int(i - 1, j, k));
         }
-        if (i != _width-1)
+        if (i != _size.x - 1)
         {
             neighbors.Add(new Vector3Int(i + 1, j, k));
         }
@@ -319,7 +320,7 @@ public class WorldChunk : MonoBehaviour
         {
             neighbors.Add(new Vector3Int(i, j - 1, k));
         }
-        if (j != _height-1)
+        if (j != _size.y - 1)
         {
             neighbors.Add(new Vector3Int(i, j + 1, k));
         }
@@ -328,7 +329,7 @@ public class WorldChunk : MonoBehaviour
         {
             neighbors.Add(new Vector3Int(i, j, k - 1));
         }
-        if (k != _width - 1)
+        if (k != _size.z - 1)
         {
             neighbors.Add(new Vector3Int(i, j, k + 1));
         }
@@ -356,13 +357,23 @@ public class WorldChunk : MonoBehaviour
         {
             Vector3Int npos = neighbors[ni];
             BlockType ntype;
-            if (LocalPositionInRange(npos))
+            if (LocalPositionIsInRange(npos))
             {
                 Block block = _blocks[npos.x, npos.y, npos.z];
                 ntype = block == null ? null : block.type;
             } else
             {
-                ntype = GetBlockType(npos.x + _minX, npos.y, npos.z + _minZ, _height);
+                Vector3Int worldPos = LocalToWorldPosition(npos);
+                WorldChunk chunkNeighbor = chunkManager.GetNearestChunk(worldPos);
+                if (chunkNeighbor != null)
+                {
+                    ntype = chunkNeighbor.ReadBlockType(worldPos);
+                }
+                else
+                {
+                    ntype = GetBlockType(worldPos);
+                }
+
             }
             visibility[ni] = (ntype == null || ntype.isTransparent) && (type != ntype);
         }
@@ -372,17 +383,17 @@ public class WorldChunk : MonoBehaviour
 
     private Vector3Int WorldToLocalPosition(Vector3Int worldPos)
     {
-        int x = worldPos.x - _minX;
-        int y = worldPos.y;
-        int z = worldPos.z - _minZ;
-
-        Vector3Int localPos = new Vector3Int(x,y,z);
-        return localPos;
+        return worldPos - _minCorner;
     }
 
-    private bool LocalPositionInRange(Vector3Int localPos)
+    private Vector3Int LocalToWorldPosition(Vector3Int localPos)
     {
-        return localPos.x >= 0 && localPos.z >= 0 && localPos.x < _width && localPos.z < _width && localPos.y >= 0 && localPos.y < _height;
+        return localPos + _minCorner;
+    }
+
+    private bool LocalPositionIsInRange(Vector3Int localPos)
+    {
+        return localPos.x >= 0 && localPos.z >= 0 && localPos.x < _size.x && localPos.z < _size.z && localPos.y >= 0 && localPos.y < _size.y;
     }
 
     public void UpdateBlocks(List<Vector3Int> positions, List<Block> newBlocks)
@@ -393,7 +404,7 @@ public class WorldChunk : MonoBehaviour
         {
             Vector3Int worldPos = positions[i];
             Vector3Int localPos = WorldToLocalPosition(worldPos);
-            if (LocalPositionInRange(localPos))
+            if (LocalPositionIsInRange(localPos))
             {
                 Block newBlock = newBlocks[i].type == null ? null : newBlocks[i];
                 Block currBlock = _blocks[localPos.x, localPos.y, localPos.z];
@@ -419,12 +430,27 @@ public class WorldChunk : MonoBehaviour
         }
     }
 
+    public Vector3 Center()
+    {
+        return new Vector3(_size.x / 2f + _minCorner.x, _size.y / 2f + _minCorner.y, _size.z / 2f + _minCorner.z);
+    }
+
     public void Highlight(Color color)
     {
-        Vector3 chunkCenter = new Vector3(_minX + _width/2, _height/2, _minZ + _width/2);
+        Vector3 chunkCenter = Center();
+
+
         Gizmos.color = color;
-        Gizmos.DrawCube(chunkCenter, new Vector3(_width, _height, _width));
-        Debug.DrawLine(chunkCenter + Vector3.down * 20, chunkCenter + Vector3.up * 20, color);
+        Gizmos.DrawWireCube(chunkCenter, _size);
+        //Debug.DrawLine(chunkCenter + Vector3.down * 20, chunkCenter + Vector3.up * 20, color);
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (highlight)
+        {
+            Highlight(Color.red);
+        }
     }
 
 }

@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28a08073b11cc4289a3c8ab2936eedeb, type: 3}
   m_Name: Stone
   m_EditorClassIdentifier: 
-  displayName: Stone
+  index: 0
+  name: Stone
   atlasPositions:
   - {x: 1, y: 0}
   isTransparent: 0

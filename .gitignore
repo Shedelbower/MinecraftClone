@@ -6,6 +6,12 @@ Minecraft/Logs/*
 Minecraft/Packages/*
 Minecraft/obj/*
 
+Builds/*
+
+Minecraft/Unity.*
+
+Minecraft/Minecraft.csproj
+
 Minecraft/.vs/*
 Minecraft/Minecraft.sln
 Minecraft/Assembly-CSharp.csproj

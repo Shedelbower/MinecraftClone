@@ -5,9 +5,9 @@ using UnityEngine;
 public class ChunkManager : MonoBehaviour
 {
     public PlayerController player;
-    [Range(1,100)] public int loadDistance = 4;
-    [Range(4, 32)] public int chunkWidth = 16;
-    [Range(4, 64)] public int chunkHeight = 32;
+    public Vector3Int loadDistance = new Vector3Int(4,1,4);
+    public Vector3Int chunkSize = Vector3Int.one * 16;
+    //[Range(4, 64)] public int chunkHeight = 32;
 
     private Texture2D blockAtlas;
     public Material chunkOpaqueMaterial;
@@ -15,9 +15,9 @@ public class ChunkManager : MonoBehaviour
 
     private Queue<WorldChunk> _chunkBuildQueue;
 
-    [SerializeField] private Dictionary<Vector2Int, WorldChunk> _chunks;
+    [SerializeField] private Dictionary<Vector3Int, WorldChunk> _chunks;
 
-    private Vector2Int _prevPlayerChunk;
+    private Vector3Int _prevPlayerChunk;
 
     private void Start()
     {
@@ -29,9 +29,9 @@ public class ChunkManager : MonoBehaviour
     public void Initialize()
     {
         _chunkBuildQueue = new Queue<WorldChunk>();
-        _chunks = new Dictionary<Vector2Int, WorldChunk>();
+        _chunks = new Dictionary<Vector3Int, WorldChunk>();
         
-        _prevPlayerChunk = Vector2Int.one * int.MaxValue;
+        _prevPlayerChunk = Vector3Int.one * int.MaxValue;
 
         blockAtlas = (UnityEngine.Texture2D)chunkOpaqueMaterial.GetTexture("_MainTex");
 
@@ -64,9 +64,9 @@ public class ChunkManager : MonoBehaviour
 
     public void UpdateLoadedChunks()
     {
-        Vector2Int playerPos = GetPlayerPosition();
+        Vector3Int playerPos = GetPlayerPosition();
 
-        Vector2Int playerChunkPos = GetNearestChunkPosition(playerPos);
+        Vector3Int playerChunkPos = GetNearestChunkPosition(playerPos);
         if (playerChunkPos == _prevPlayerChunk)
         {
             return; // The player has not left the previous chunk, so don't bother checking if they're closer to other chunks
@@ -74,15 +74,15 @@ public class ChunkManager : MonoBehaviour
 
         _prevPlayerChunk = playerChunkPos;
 
-        List<Vector2Int> chunksPositionsToLoad = GetInRangeChunkPositions(playerChunkPos, loadDistance);
+        List<Vector3Int> chunksPositionsToLoad = GetInRangeChunkPositions(playerChunkPos, loadDistance);
 
-        foreach (Vector2Int pos in chunksPositionsToLoad)
+        foreach (Vector3Int pos in chunksPositionsToLoad)
         {
             LoadChunk(pos);
         }
 
         // Unload
-        foreach (Vector2Int pos in _chunks.Keys)
+        foreach (Vector3Int pos in _chunks.Keys)
         {
             // TODO: Use a set for faster contains check
             if (chunksPositionsToLoad.Contains(pos) == false)
@@ -92,13 +92,13 @@ public class ChunkManager : MonoBehaviour
         }
     }
 
-    public void UnloadChunk(Vector2Int pos)
+    public void UnloadChunk(Vector3Int pos)
     {
         WorldChunk chunk = _chunks[pos];
         chunk.gameObject.SetActive(false);
     }
 
-    public void LoadChunk(Vector2Int pos)
+    public void LoadChunk(Vector3Int pos)
     {
         if (_chunks.ContainsKey(pos) == false)
         {
@@ -112,9 +112,9 @@ public class ChunkManager : MonoBehaviour
         chunk.gameObject.SetActive(true);
     }
 
-    public WorldChunk InitializeChunk(Vector2Int pos)
+    public WorldChunk InitializeChunk(Vector3Int pos)
     {
-        GameObject go = new GameObject("Chunk [" + pos.x + "," + pos.y + "]");
+        GameObject go = new GameObject("Chunk [" + pos.x + "," + pos.y + "," + pos.z + "]");
         go.transform.parent = this.transform;
         WorldChunk chunk = go.AddComponent<WorldChunk>();
 
@@ -123,59 +123,78 @@ public class ChunkManager : MonoBehaviour
         chunk.chunkOpaqueMaterial = this.chunkOpaqueMaterial;
         chunk.chunkFadeMaterial = this.chunkFadeMaterial;
 
-        chunk.Initialize(pos.x, pos.y, chunkWidth, chunkHeight);
+        //Debug.Log("Init Chunk [" + pos.x + "," + pos.y + "," + pos.z + "]");
+        chunk.Initialize(pos, chunkSize);
+        chunk.chunkManager = this;
 
         //chunk.BuildMesh();
 
         return chunk;
     }
 
-    private List<Vector2Int> GetInRangeChunkPositions(Vector2Int centerChunkPos, int radius)
+    private List<Vector3Int> GetInRangeChunkPositions(Vector3Int centerChunkPos, Vector3Int radius)
     {
-        List<Vector2Int> positionsInRange = new List<Vector2Int>();
+        List<Vector3Int> positionsInRange = new List<Vector3Int>();
 
-        //Vector2Int centerChunkPos = GetNearestChunkPosition(center);
+		//      int maxManhattanDist = radius.x;
+		//radius.y = radius.x;
+		//radius.z = radius.x;
 
-        float sqrMaxDist = (radius * chunkWidth) * (radius * chunkWidth);
+		float maxDistSqrd = Mathf.Pow(radius.x * chunkSize.x,2f);
 
-        for (int dx = -radius; dx <= radius; dx += 1)
+		for (int dx = -radius.x; dx <= radius.x; dx += 1)
         {
-            for (int dz = -radius; dz <= radius; dz += 1)
+            for (int dy = -radius.y; dy <= radius.y; dy += 1)
             {
-                int x = centerChunkPos.x + dx * chunkWidth;
-                int z = centerChunkPos.y + dz * chunkWidth;
-
-                Vector2Int chunkPos = new Vector2Int(x,z);
-
-                float sqrDist = (centerChunkPos - chunkPos).sqrMagnitude;
-
-                if (sqrDist <= sqrMaxDist)
+                for (int dz = -radius.z; dz <= radius.z; dz += 1)
                 {
-                    positionsInRange.Add(chunkPos);
+
+					Vector3 offset = new Vector3(dx * chunkSize.x, dy * chunkSize.y, dz * chunkSize.z);
+					float distSqrd = offset.sqrMagnitude;
+
+                    if (distSqrd <= maxDistSqrd)
+                    {
+                        //    Vector3Int offset = new Vector3Int(dx * chunkSize.x, dy * chunkSize.y, dz * chunkSize.z);
+                        positionsInRange.Add(centerChunkPos + Vector3Int.RoundToInt(offset));
+                    }
+
+                    //int manhattanDist = Mathf.Abs(dx) + Mathf.Abs(dy) + Mathf.Abs(dz);
+
+
+                    //if (manhattanDist <= maxManhattanDist)
+                    //{
+                    //    Vector3Int offset = new Vector3Int(dx * chunkSize.x, dy * chunkSize.y, dz * chunkSize.z);
+                    //    positionsInRange.Add(centerChunkPos + offset);
+                    //}
+
+                    //Vector3Int offset = new Vector3Int(dx * chunkSize.x, dy * chunkSize.y, dz * chunkSize.z);
+                    //positionsInRange.Add(centerChunkPos + offset);
                 }
-            }
+			}
         }
 
-            return positionsInRange;
+        return positionsInRange;
     }
 
-    private Vector2Int GetNearestChunkPosition(Vector2Int pos)
+    private Vector3Int GetNearestChunkPosition(Vector3Int pos)
     {
-        pos -= Vector2Int.one * (chunkWidth / 2);
-        //pos -= Vector2Int.one * (chunkWidth);
+        Vector3Int offset = new Vector3Int(int.MaxValue / 2, int.MaxValue / 2, int.MaxValue / 2);
+        pos += offset;
 
-        int xi = pos.x / chunkWidth;
-        int zi = pos.y / chunkWidth;
+        int xi = pos.x / chunkSize.x;
+        int yi = pos.y / chunkSize.y;
+        int zi = pos.z / chunkSize.z;
 
-        int x = xi * chunkWidth;
-        int z = zi * chunkWidth;
+        int x = xi * chunkSize.x;
+        int y = yi * chunkSize.y;
+        int z = zi * chunkSize.z;
 
-        return new Vector2Int(x, z);
+        return new Vector3Int(x, y, z) - offset;
     }
 
-    private WorldChunk GetNearestChunk(Vector2Int pos)
+    public WorldChunk GetNearestChunk(Vector3Int pos)
     {
-        Vector2Int nearestPos = GetNearestChunkPosition(pos);
+        Vector3Int nearestPos = GetNearestChunkPosition(pos);
         if (_chunks.ContainsKey(nearestPos) == false)
         {
             return null;
@@ -184,11 +203,9 @@ public class ChunkManager : MonoBehaviour
         return _chunks[nearestPos];
     }
 
-    private Vector2Int GetPlayerPosition()
+    private Vector3Int GetPlayerPosition()
     {
-        int x = (int)player.transform.position.x;
-        int z = (int)player.transform.position.z;
-        return new Vector2Int(x, z);
+        return Vector3Int.CeilToInt(player.transform.position);
     }
 
     public void UpdateBlocks(List<Vector3Int> positions, List<Block> newBlocks)
@@ -197,13 +214,15 @@ public class ChunkManager : MonoBehaviour
 
         foreach(Vector3Int pos in positions)
         {
-            Vector2Int pos2D = new Vector2Int(pos.x, pos.z);
-            relevantChunks.Add(GetNearestChunk(pos2D));
+            relevantChunks.Add(GetNearestChunk(pos));
         }
 
         foreach(WorldChunk chunk in relevantChunks)
         {
-            chunk.UpdateBlocks(positions, newBlocks);
+            if (chunk != null)
+            {
+                chunk.UpdateBlocks(positions, newBlocks);
+            }
         }
     }
 
