@@ -107,10 +107,14 @@ public class WorldChunk : MonoBehaviour
         {
             type = BlockType.GetBlockType("Stone");
 
-            if (Random.value < 0.1f)
+            if (y < noise - 10 && Random.value < 0.05f)
             {
                 type = BlockType.GetBlockType("Iron Ore");
             }
+            //else if (y < noise - 5 && Random.value < 0.3f)
+            //{
+            //    type = BlockType.GetBlockType("Gravel");
+            //}
         }
         else if (y < noise)
         {

@@ -14,6 +14,8 @@ public class PlayerController : MonoBehaviour
     public GameObject splashEffect;
     public GameObject explosionEffect;
 
+    public GameObject tntPrefab;
+
     public Color waterTintColor = Color.blue;
     private Color initialSkyColor;
     public Material[] materialsToColor;
@@ -77,14 +79,12 @@ public class PlayerController : MonoBehaviour
             if (_prevType != currentType)
             {
                 string blockTypeName = currentType == null ? "Air" : currentType.name;
-                if (currentType != null && currentType.name == "Water")
+                if (blockTypeName == "Water")
                 {
-                    _isInWater = true;
                     OnEnterWater();
                 }
                 else if (_prevType != null && _prevType.name == "Water")
                 {
-                    _isInWater = false;
                     OnExitWater();
                 }
 
@@ -125,7 +125,8 @@ public class PlayerController : MonoBehaviour
         }
         else if (Input.GetKeyDown(KeyCode.Q))
         {
-            Boom();
+            //Boom();
+            LaunchTNT();
         }
 
         if (Input.GetKeyDown(KeyCode.Space) && _isInWater == false && characterController.isGrounded)
@@ -172,7 +173,7 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        float gravity = -7.0f;
+        float gravity = -9.0f;
         if (_isInWater)
         {
             gravity *= waterSpeedModifier;
@@ -204,6 +205,7 @@ public class PlayerController : MonoBehaviour
 
     private void OnEnterWater()
     {
+        _isInWater = true;
         _speed = baseSpeed * waterSpeedModifier; // Entering water
         GameObject effect = Instantiate(splashEffect, null) as GameObject;
         effect.transform.position = feet.position;
@@ -212,6 +214,7 @@ public class PlayerController : MonoBehaviour
 
     private void OnExitWater()
     {
+        _isInWater = false;
         _speed = baseSpeed;
         SetMaterialColors(Color.white);
         Camera.main.backgroundColor = initialSkyColor;
@@ -249,6 +252,14 @@ public class PlayerController : MonoBehaviour
 
         Quaternion localRotation = Quaternion.Euler(rotX, rotY, 0.0f);
         camera.parent.rotation = localRotation;
+    }
+
+    private void LaunchTNT()
+    {
+        GameObject prefab = Instantiate(tntPrefab, null);
+        prefab.transform.position = camera.position + camera.forward;
+        TNTController tnt = prefab.GetComponent<TNTController>();
+        tnt.Launch(camera.forward);
     }
 
     private void Boom()
