@@ -14,7 +14,7 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 9
-  m_Fog: 0
+  m_Fog: 1
   m_FogColor: {r: 0.7372549, g: 0.909804, b: 0.98823535, a: 1}
   m_FogMode: 1
   m_FogDensity: 0.01
@@ -299,8 +299,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 1253456488}
-  loadDistance: {x: 4, y: 1, z: 4}
-  chunkSize: {x: 16, y: 16, z: 16}
+  loadDistance: {x: 5, y: 1, z: 5}
+  chunkSize: {x: 16, y: 24, z: 16}
   chunkOpaqueMaterial: {fileID: 2100000, guid: ba6d2a2d180fd4e42b4842e600554a74, type: 2}
   chunkWaterMaterial: {fileID: 2100000, guid: 473e63a8ecc2745379c9255b80882d3f, type: 2}
   chunkFoliageMaterial: {fileID: 2100000, guid: efa3a9ea59db94157a03b1297d3355ef,
@@ -887,7 +887,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1253456482}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 46.59, z: 0}
+  m_LocalPosition: {x: 0, y: 56, z: 16}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1969729315}

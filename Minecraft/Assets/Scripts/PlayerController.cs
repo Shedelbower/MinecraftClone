@@ -225,7 +225,7 @@ public class PlayerController : MonoBehaviour
         SetMaterialColors(waterTintColor);
         Camera.main.backgroundColor = waterTintColor;
 
-        RenderSettings.fog = true;
+        //RenderSettings.fog = true;
         RenderSettings.fogColor = waterTintColor;
         RenderSettings.fogMode = FogMode.Exponential;
         RenderSettings.fogDensity = 0.15f;
@@ -236,8 +236,11 @@ public class PlayerController : MonoBehaviour
         SetMaterialColors(Color.white);
         Camera.main.backgroundColor = initialSkyColor;
 
-        RenderSettings.fog = false;
-
+        //RenderSettings.fog = false;
+        RenderSettings.fogColor = initialSkyColor;
+        RenderSettings.fogMode = FogMode.Linear;
+        RenderSettings.fogStartDistance = 60;
+        RenderSettings.fogEndDistance = 65;
     }
 
     private void DoMouseRotation()
