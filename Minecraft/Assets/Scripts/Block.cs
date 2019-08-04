@@ -39,7 +39,80 @@ public class Block
         return this.type == null || this.type.isTransparent;
     }
 
-    public Mesh GenerateFaces(bool[] faceIsVisible, AtlasReader atlasReader)
+    public Mesh GenerateMesh(bool[] faceIsVisible, AtlasReader atlasReader)
+    {
+        if (this.type.isBillboard)
+        {
+            return GenerateBillboardFaces(atlasReader);
+        } else
+        {
+            return GenerateCubeFaces(faceIsVisible, atlasReader);
+        }
+    }
+
+    public Mesh GenerateBillboardFaces(AtlasReader atlasReader)
+    {
+        Vector3[] baseVertices =
+        {
+            new Vector3(1.0f, -1.0f, 0.0f),
+            new Vector3(1.0f, 1.0f, 0.0f),
+            new Vector3(-1.0f, 1.0f, 0.0f),
+            new Vector3(-1.0f, -1.0f, 0.0f)
+        };
+
+        List<Vector3> vertices = new List<Vector3>();
+
+        Quaternion[] rotations =
+        {
+            Quaternion.AngleAxis(45f, Vector3.up),
+            Quaternion.AngleAxis(-45f, Vector3.up),
+            Quaternion.AngleAxis(135f, Vector3.up),
+            Quaternion.AngleAxis(-135f, Vector3.up)
+        };
+
+
+        for (int i = 0; i < rotations.Length; i++)
+        {
+            Quaternion rotation = rotations[i];
+            foreach(Vector3 vertex in baseVertices)
+            {
+                vertices.Add(rotation * vertex * 0.7071f);
+            }
+        }
+
+        List<Vector3> normals = new List<Vector3>();
+        Vector3 normal = new Vector3(0f,0f,1f);
+        for (int i = 0; i < vertices.Count; i++)
+        {
+            normals.Add(normal);
+        }
+
+        Vector2Int atlasIndex = type.atlasPositions[0];
+        List<Vector2> uvs = new List<Vector2>();
+
+        for (int i = 0; i < rotations.Length; i++)
+        {
+            uvs.AddRange(atlasReader.GetUVs(atlasIndex.x, atlasIndex.y));
+        }
+
+        int[] triangles = {
+            0, 1, 2, 0, 2, 3,
+            0+4, 1+4, 2+4, 0+4, 2+4, 3+4,
+            0+8, 1+8, 2+8, 0+8, 2+8, 3+8,
+            0+12, 1+12, 2+12, 0+12, 2+12, 3+12
+        };
+        
+
+        Mesh mesh = new Mesh();
+        mesh.SetVertices(vertices);
+        mesh.SetNormals(normals);
+        mesh.SetUVs(0, uvs);
+        mesh.SetTriangles(triangles, 0);
+
+        return mesh;
+    }
+
+    public Mesh GenerateCubeFaces(bool[] faceIsVisible, AtlasReader atlasReader)
     {
         List<List<Vector3>> vertexLists = new List<List<Vector3>>();
         List<List<Vector3>> normalLists = new List<List<Vector3>>();

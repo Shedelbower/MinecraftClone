@@ -7,10 +7,16 @@ public class PlayerController : MonoBehaviour
     public CharacterController characterController;
     public ChunkManager chunkManager;
     public Transform feet;
-    [Range(0.0f, 100.0f)] public float baseSpeed = 10.0f;
+    [Range(0.0f, 100f)] public float baseSpeed = 10f;
+    [Range(0.0f, 100f)] public float jumpPower = 10f;
+    [Range(0.0f, 1.0f)] public float sidewaysSpeedModifier = 0.5f;
     [Range(0.0f, 2.0f)] public float waterSpeedModifier = 0.5f;
     public GameObject splashEffect;
     public GameObject explosionEffect;
+
+    public Color waterTintColor = Color.blue;
+    private Color initialSkyColor;
+    public Material[] materialsToColor;
 
     public Transform camera;
 
@@ -18,6 +24,13 @@ public class PlayerController : MonoBehaviour
 
     private Vector3Int _prevPosition;
     private BlockType _prevType;
+
+    private bool _isJumping = false;
+    private float _jumpTimer = 0.0f;
+    [SerializeField] private float _jumpDuration = 2.0f;
+
+    [SerializeField] private bool _isInWater = false;
+    //[SerializeField] private bool _cameraIsInWater = false;
 
     // Mouse
     public float mouseSensitivity = 100.0f;
@@ -28,10 +41,15 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
+        //QualitySettings.vSyncCount = 0;
+        //Application.targetFrameRate = 30;
+
         Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+
+        initialSkyColor = Camera.main.backgroundColor;
 
         _speed = baseSpeed;
-        //_waterColliders = new List<Collider>();
 
         if (characterController == null)
         {
@@ -46,28 +64,6 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            Boom();
-        }
-
-        Vector3 movement = Vector3.zero;
-
-        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
-        {
-            movement = this.transform.forward * _speed;
-        } else if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow))
-        {
-            movement = -this.transform.forward * _speed;
-        }
-
-        movement = camera.rotation * movement;
-
-        characterController.SimpleMove(movement);
-
-
-        DoMouseRotation();
-
         Vector3Int currPosition = new Vector3Int((int)transform.position.x, (int)transform.position.y, (int)transform.position.z);
 
         if (currPosition != _prevPosition)
@@ -75,29 +71,170 @@ public class PlayerController : MonoBehaviour
             chunkManager.UpdateLoadedChunks();
             _prevPosition = currPosition;
 
-            // Check if in water
-            BlockType currentType = WorldChunk.GetBlockType(feet.position);
+            // Check if feet in water
+            Block currBlock = chunkManager.GetBlockAtPosition(Vector3Int.RoundToInt(feet.position));
+            BlockType currentType = currBlock == null ? null : currBlock.type;
             if (_prevType != currentType)
             {
                 string blockTypeName = currentType == null ? "Air" : currentType.name;
-                //Debug.Log(blockTypeName);
-
                 if (currentType != null && currentType.name == "Water")
                 {
-                    _speed = baseSpeed * waterSpeedModifier; // Entering water
-                    GameObject effect = Instantiate(splashEffect, null) as GameObject;
-                    effect.transform.position = feet.position;
-                    Destroy(effect, 1.5f);
+                    _isInWater = true;
+                    OnEnterWater();
                 }
                 else if (_prevType != null && _prevType.name == "Water")
                 {
-                    _speed = baseSpeed; // Exiting water
+                    _isInWater = false;
+                    OnExitWater();
                 }
 
                 _prevType = currentType;
             }
 
+            // Check if camera in water
+            currBlock = chunkManager.GetBlockAtPosition(Vector3Int.RoundToInt(camera.position));
+            currentType = currBlock == null ? null : currBlock.type;
+            if (currentType != null && currentType.name == "Water")
+            {
+                OnCameraEnterWater();
+            } else
+            {
+                OnCameraExitWater();
+            }
+
         }
+
+
+        //if (Input.GetKeyDown(KeyCode.L))
+        //{
+        //    Cursor.lockState = CursorLockMode.Locked;
+        //} else if (Input.GetKeyDown(KeyCode.K))
+        //{
+        //    Cursor.lockState = CursorLockMode.None;
+        //}
+
+        
+        if (Input.GetMouseButtonDown(1))
+        {
+            //PlaceBlock("Sand");
+            PlaceSameBlock();
+        }
+        else if (Input.GetMouseButtonDown(0))
+        {
+            BreakBlock();
+        }
+        else if (Input.GetKeyDown(KeyCode.Q))
+        {
+            Boom();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space) && _isInWater == false && characterController.isGrounded)
+        {
+            _isJumping = true;
+            _jumpTimer = 0.0f;
+        }
+
+        Vector3 movement = Vector3.zero;
+
+        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
+        {
+            movement += this.transform.forward * _speed;
+        }
+        if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow))
+        {
+            movement += -this.transform.forward * _speed;
+        }
+        if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
+        {
+            movement += -this.transform.right * _speed * sidewaysSpeedModifier;
+        }
+        if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
+        {
+            movement += this.transform.right * _speed * sidewaysSpeedModifier;
+        }
+
+        movement = camera.rotation * movement;
+
+        float mag = movement.magnitude;
+
+        movement.y = 0.0f;
+        movement = movement.normalized * mag;
+
+        if (_isJumping)
+        {
+            _jumpTimer += Time.deltaTime;
+            float t = Mathf.Lerp(jumpPower, 0.0f, _jumpTimer / _jumpDuration);
+            movement += Vector3.up * t;
+
+            if (_jumpTimer >= _jumpDuration || _isInWater)
+            {
+                _isJumping = false;
+            }
+        }
+
+        float gravity = -7.0f;
+        if (_isInWater)
+        {
+            gravity *= waterSpeedModifier;
+        }
+        movement += Vector3.up * gravity;
+
+        if (Input.GetKey(KeyCode.Space) && _isInWater)
+        {
+            movement += Vector3.up * _speed * waterSpeedModifier;
+            movement -= Vector3.up * gravity; // Remove effects of gravity
+        }
+
+        characterController.Move(movement * Time.deltaTime);
+
+
+        DoMouseRotation();
+
+
+        
+    }
+
+    private void SetMaterialColors(Color color)
+    {
+        foreach(Material material in materialsToColor)
+        {
+            material.color = color;
+        }
+    }
+
+    private void OnEnterWater()
+    {
+        _speed = baseSpeed * waterSpeedModifier; // Entering water
+        GameObject effect = Instantiate(splashEffect, null) as GameObject;
+        effect.transform.position = feet.position;
+        Destroy(effect, 1.5f);
+    }
+
+    private void OnExitWater()
+    {
+        _speed = baseSpeed;
+        SetMaterialColors(Color.white);
+        Camera.main.backgroundColor = initialSkyColor;
+    }
+
+    private void OnCameraEnterWater()
+    {
+        SetMaterialColors(waterTintColor);
+        Camera.main.backgroundColor = waterTintColor;
+
+        RenderSettings.fog = true;
+        RenderSettings.fogColor = waterTintColor;
+        RenderSettings.fogMode = FogMode.Exponential;
+        RenderSettings.fogDensity = 0.15f;
+    }
+
+    private void OnCameraExitWater()
+    {
+        SetMaterialColors(Color.white);
+        Camera.main.backgroundColor = initialSkyColor;
+
+        RenderSettings.fog = false;
+
     }
 
     private void DoMouseRotation()
@@ -111,13 +248,16 @@ public class PlayerController : MonoBehaviour
         rotX = Mathf.Clamp(rotX, -clampAngle, clampAngle);
 
         Quaternion localRotation = Quaternion.Euler(rotX, rotY, 0.0f);
-        camera.rotation = localRotation;
+        camera.parent.rotation = localRotation;
     }
 
     private void Boom()
     {
-        //Vector3Int center = Vector3Int.CeilToInt(this.feet.position);
-        Vector3Int center = Vector3Int.RoundToInt(this.camera.position + this.camera.rotation * this.transform.forward * 3);
+        Vector3Int center;
+        if (RaycastToBlock(30.0f, true, out center) == false)
+        {
+            return;
+        }
 
         int blastRadius = 4;
 
@@ -147,10 +287,96 @@ public class PlayerController : MonoBehaviour
             replacements.Add(replacement);
         }
 
-        chunkManager.UpdateBlocks(positions, replacements);
+        chunkManager.ModifyBlocks(positions, replacements);
 
         GameObject effect = Instantiate(explosionEffect, null) as GameObject;
         effect.transform.position = center;
+    }
+
+    private void PlaceBlock(string blockTypeName)
+    {
+        Block block = new Block(blockTypeName);
+        PlaceBlock(block);
+    }
+
+    private void PlaceBlock(BlockType blockType)
+    {
+        Block block = new Block(blockType);
+        PlaceBlock(block);
+    }
+
+    private void PlaceBlock(Block block)
+    {
+        Vector3Int blockPos;
+        if (RaycastToBlock(10.0f, true, out blockPos))
+        {
+            List<Vector3Int> positions = new List<Vector3Int>();
+            List<Block> blocks = new List<Block>();
+
+            positions.Add(blockPos);
+            blocks.Add(block);
+
+            chunkManager.ModifyBlocks(positions, blocks);
+        }
+    }
+
+    private Block GetTargetBlock(float maxDistance)
+    {
+        Vector3Int blockPos;
+        if (RaycastToBlock(maxDistance, false, out blockPos))
+        {
+            Block targetBlock = chunkManager.GetBlockAtPosition(blockPos);
+            return targetBlock;
+        }
+
+        return null;
+    }
+
+    private void PlaceSameBlock()
+    {
+        Block targetBlock = GetTargetBlock(10.0f);
+        if (targetBlock == null)
+        {
+            return;
+        }
+        BlockType targetType = targetBlock.type;
+
+        PlaceBlock(targetType);
+    }
+
+    private void BreakBlock()
+    {
+        Vector3Int blockPos;
+        if (RaycastToBlock(10.0f, false, out blockPos))
+        {
+            List<Vector3Int> positions = new List<Vector3Int>();
+            List<Block> blocks = new List<Block>();
+
+            positions.Add(blockPos);
+            Block block = new Block("Air");
+            blocks.Add(block);
+
+            chunkManager.ModifyBlocks(positions, blocks);
+        }
+    }
+
+    private bool RaycastToBlock(in float maxDistance, in bool getEmptyBlock, out Vector3Int hitBlockPosition)
+    {
+        RaycastHit hit;
+        // Does the ray intersect any objects excluding the player layer
+        Vector3 direction = camera.TransformDirection(Vector3.forward);
+        if (Physics.Raycast(camera.position, direction, out hit, Mathf.Infinity))
+        {
+            if (hit.distance <= maxDistance)
+            {
+                Vector3 offset = getEmptyBlock ? direction * -0.01f : direction * 0.01f;
+                hitBlockPosition = Vector3Int.RoundToInt(hit.point + offset);
+                return true;
+            }
+        }
+
+        hitBlockPosition = Vector3Int.zero;
+        return false;
     }
 
 

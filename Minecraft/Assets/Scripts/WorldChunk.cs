@@ -5,12 +5,36 @@ using UnityEngine;
 
 public class WorldChunk : MonoBehaviour
 {
+    public Vector3Int ID
+    {
+        get { return _minCorner; }
+    }
+
+    public bool IsInitialized
+    {
+        get;
+    }
+
+    public bool IsLoaded
+    {
+        get;
+        private set;
+    }
+
+    public bool IsModified
+    {
+        get;
+        private set;
+    }
+
+
     public bool highlight = true;
     public ChunkManager chunkManager;
 
     public Texture2D blockAtlas;
     public Material chunkOpaqueMaterial;
-    public Material chunkFadeMaterial;
+    public Material chunkWaterMaterial;
+    public Material chunkFoliageMaterial;
 
     public Vector3Int _size = Vector3Int.one * 16;
 
@@ -28,7 +52,7 @@ public class WorldChunk : MonoBehaviour
 
         _blocks = new Block[size.x, size.y, size.z];
 
-        _atlasReader = new AtlasReader(blockAtlas, 32);
+        _atlasReader = new AtlasReader(blockAtlas, 8);
 
         for (int x = 0; x < _size.x; x++)
         {
@@ -71,7 +95,7 @@ public class WorldChunk : MonoBehaviour
         int noise = Mathf.FloorToInt(Mathf.PerlinNoise(1 * (x) / (float)32 + offset.x, 1 * (z) / (float)32 + offset.y) * 30);
         noise += 30;
 
-        BlockType type;
+        BlockType type = null;
 
         int waterLevel = 35;
 
@@ -87,7 +111,6 @@ public class WorldChunk : MonoBehaviour
             {
                 type = BlockType.GetBlockType("Iron Ore");
             }
-
         }
         else if (y < noise)
         {
@@ -105,9 +128,42 @@ public class WorldChunk : MonoBehaviour
         {
             type = BlockType.GetBlockType("Water");
         }
-        else
+        else if (y == noise + 1 && y > waterLevel + 1)
         {
-            type = null;
+            //UnityEngine.Random.State prevState = Random.state;
+            //Random.InitState(noise + x^noise + y^z + z^y);
+
+            float p = Random.value;
+            if (p < 0.1f)
+            {
+                type = BlockType.GetBlockType("Tall Grass");
+            } else if (p < 0.12f)
+            {
+                float p2 = Random.value;
+                if (p2 < 0.2f)
+                {
+                    type = BlockType.GetBlockType("Yellow Flower");
+                }
+                else if (p2 < 0.4f)
+                {
+                    type = BlockType.GetBlockType("Daisy");
+                }
+                else if (p2 < 0.6f)
+                {
+                    type = BlockType.GetBlockType("Red Tulip");
+                }
+                else if (p2 < 0.8f)
+                {
+                    type = BlockType.GetBlockType("Pink Tulip");
+                }
+                else if (p2 < 1.0f)
+                {
+                    type = BlockType.GetBlockType("Orange Tulip");
+                }
+
+            }
+
+            //Random.state = prevState;
         }
 
         return type;
@@ -115,13 +171,18 @@ public class WorldChunk : MonoBehaviour
 
     public void BuildMesh()
     {
-        BuildOpaqueMesh();
-        BuildWaterMesh();
+        bool[,,] isExternalBlock = GetExternalBlockMatrix();
+
+        BuildOpaqueMesh(isExternalBlock);
+        BuildWaterMesh(isExternalBlock);
+        BuildFoliageMesh(isExternalBlock);
+
+        this.IsLoaded = true;
     }
 
-    public Mesh BuildOpaqueMesh()
+    public Mesh BuildOpaqueMesh(bool[,,] isExternalBlock)
     {
-        bool[,,] isExternalBlock = GetExternalBlockMatrix();
+        //bool[,,] isExternalBlock = GetExternalBlockMatrix();
 
         List<Mesh> meshes = new List<Mesh>();
         List<Matrix4x4> translations = new List<Matrix4x4>();
@@ -138,7 +199,7 @@ public class WorldChunk : MonoBehaviour
                     {
                         bool[] visibility = GetVisibility(i,j,k);
                         
-                        Mesh mesh = block.GenerateFaces(visibility, _atlasReader);
+                        Mesh mesh = block.GenerateMesh(visibility, _atlasReader);
                         meshes.Add(mesh);
 
                         translations.Add(Matrix4x4.Translate(new Vector3(i, j, k)));
@@ -186,10 +247,10 @@ public class WorldChunk : MonoBehaviour
         return final;
     }
 
-    public Mesh BuildWaterMesh()
+    public Mesh BuildWaterMesh(bool[,,] isExternalBlock)
     {
         // TODO: Store this from other build
-        bool[,,] isExternalBlock = GetExternalBlockMatrix();
+        //bool[,,] isExternalBlock = GetExternalBlockMatrix();
 
         List<Mesh> meshes = new List<Mesh>();
         List<Matrix4x4> translations = new List<Matrix4x4>();
@@ -206,7 +267,7 @@ public class WorldChunk : MonoBehaviour
                     {
                         bool[] visibility = GetVisibility(i, j, k);
 
-                        Mesh mesh = block.GenerateFaces(visibility, _atlasReader);
+                        Mesh mesh = block.GenerateMesh(visibility, _atlasReader);
                         meshes.Add(mesh);
 
                         translations.Add(Matrix4x4.Translate(new Vector3(i, j, k)));
@@ -237,6 +298,83 @@ public class WorldChunk : MonoBehaviour
             go.transform.parent = this.transform;
             go.transform.localPosition = new Vector3(0, -0.0625f, 0);// Shift down to create gap between shore and the water's surface.
             go.tag = "Water";
+            go.layer = LayerMask.NameToLayer("Water");
+        }
+
+        //GameObject go = new GameObject("Mesh (Water)");
+        //go.isStatic = true;
+        //go.transform.parent = this.transform;
+        //go.transform.localPosition = new Vector3(0, -0.0625f, 0); // Shift down to create gap between shore and the water's surface.
+        MeshFilter mf = go.GetComponent<MeshFilter>();
+        MeshRenderer mr = go.GetComponent<MeshRenderer>();
+        //MeshCollider mc = go.GetComponent<MeshCollider>();
+
+        mf = mf == null ? go.AddComponent<MeshFilter>() : mf;
+        mr = mr == null ? go.AddComponent<MeshRenderer>() : mr;
+        //mc = mc == null ? go.AddComponent<MeshCollider>() : mc;
+
+        mf.sharedMesh = final;
+        mr.sharedMaterial = chunkWaterMaterial;
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
+        //mc.sharedMesh = mf.sharedMesh;
+        //mc.convex = true; // TODO: Temporary fix
+        //mc.isTrigger = true;
+
+        return final;
+    }
+
+    public Mesh BuildFoliageMesh(bool[,,] isExternalBlock)
+    {
+        // TODO: Store this from other build
+        //bool[,,] isExternalBlock = GetExternalBlockMatrix();
+
+        List<Mesh> meshes = new List<Mesh>();
+        List<Matrix4x4> translations = new List<Matrix4x4>();
+
+        for (int i = 0; i < _size.x; i++)
+        {
+            for (int j = 0; j < _size.y; j++)
+            {
+                for (int k = 0; k < _size.z; k++)
+                {
+                    Block block = _blocks[i, j, k];
+
+                    if (isExternalBlock[i, j, k] && block.type != null && block.type.isBillboard)
+                    {
+                        bool[] visibility = GetVisibility(i, j, k);
+
+                        Mesh mesh = block.GenerateMesh(visibility, _atlasReader);
+                        meshes.Add(mesh);
+
+                        translations.Add(Matrix4x4.Translate(new Vector3(i, j, k)));
+                    }
+                }
+            }
+        }
+
+        Mesh final = new Mesh();
+        CombineInstance[] combine = new CombineInstance[meshes.Count];
+
+        for (int i = 0; i < combine.Length; i++)
+        {
+            combine[i].mesh = meshes[i];
+            combine[i].transform = translations[i];
+        }
+
+        final.CombineMeshes(combine, true);
+
+        string childName = "Mesh (Foliage)";
+        GameObject go = transform.Find(childName)?.gameObject;
+        if (go == null)
+        {
+            go = new GameObject(childName)
+            {
+                isStatic = true
+            };
+            go.transform.parent = this.transform;
+            go.transform.localPosition = new Vector3(0, 0, 0);
+            go.tag = "Foliage";
+            go.layer = LayerMask.NameToLayer("Foliage");
         }
 
         //GameObject go = new GameObject("Mesh (Water)");
@@ -252,11 +390,11 @@ public class WorldChunk : MonoBehaviour
         mc = mc == null ? go.AddComponent<MeshCollider>() : mc;
 
         mf.sharedMesh = final;
-        mr.sharedMaterial = chunkFadeMaterial;
+        mr.sharedMaterial = chunkFoliageMaterial;
         mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
         mc.sharedMesh = mf.sharedMesh;
-        mc.convex = true; // TODO: Temporary fix
-        mc.isTrigger = true;
+        //mc.convex = true; // TODO: Temporary fix
+        //mc.isTrigger = true;
 
         return final;
     }
@@ -396,7 +534,7 @@ public class WorldChunk : MonoBehaviour
         return localPos.x >= 0 && localPos.z >= 0 && localPos.x < _size.x && localPos.z < _size.z && localPos.y >= 0 && localPos.y < _size.y;
     }
 
-    public void UpdateBlocks(List<Vector3Int> positions, List<Block> newBlocks)
+    public bool ModifyBlocks(List<Vector3Int> positions, List<Block> newBlocks)
     {
         bool shouldRebuild = false;
 
@@ -406,7 +544,7 @@ public class WorldChunk : MonoBehaviour
             Vector3Int localPos = WorldToLocalPosition(worldPos);
             if (LocalPositionIsInRange(localPos))
             {
-                Block newBlock = newBlocks[i].type == null ? null : newBlocks[i];
+                Block newBlock = (newBlocks[i] == null || newBlocks[i].type == null) ? null : newBlocks[i];
                 Block currBlock = _blocks[localPos.x, localPos.y, localPos.z];
 
                 BlockType currType = currBlock == null ? null : currBlock.type;
@@ -417,22 +555,30 @@ public class WorldChunk : MonoBehaviour
                     shouldRebuild = true;
                 }
             }
-            
         }
 
         if (shouldRebuild)
         {
-            Debug.Log("Rebuilding...");
+            //Debug.Log("Rebuilding...");
+            this.IsModified = true;
             //Transform child = transform.Find("Mesh (Opaque)");
             //child.name = "TO DESTROY";
             //Destroy(child.gameObject);
             BuildMesh(); //TODO: Add chunk to build queue instead
         }
+
+        return shouldRebuild;
     }
 
     public Vector3 Center()
     {
         return new Vector3(_size.x / 2f + _minCorner.x, _size.y / 2f + _minCorner.y, _size.z / 2f + _minCorner.z);
+    }
+
+    public Block GetBlockAtPosition(Vector3Int worldPos)
+    {
+        Vector3Int localPos = WorldToLocalPosition(worldPos);
+        return _blocks[localPos.x, localPos.y, localPos.z];
     }
 
     public void Highlight(Color color)
@@ -451,6 +597,93 @@ public class WorldChunk : MonoBehaviour
         {
             Highlight(Color.red);
         }
+    }
+
+    public bool UpdateChunk()
+    {
+        bool anyBlockModified = false;
+        for (int i = 0; i < _size.x; i++)
+        {
+            for (int j = 0; j < _size.y; j++)
+            {
+                for (int k = 0; k < _size.z; k++)
+                {
+                    Vector3Int localPos = new Vector3Int(i,j,k);
+                    Vector3Int worldPos = LocalToWorldPosition(localPos);
+                    anyBlockModified |= UpdateBlock(worldPos);
+                }
+            }
+        }
+        return anyBlockModified;
+    }
+
+    private bool UpdateBlock(Vector3Int worldPos)
+    {
+        Vector3Int localPos = WorldToLocalPosition(worldPos);
+        Block blockToUpdate = _blocks[localPos.x, localPos.y, localPos.z];
+
+        if (blockToUpdate == null)
+        {
+            return false;
+        }
+
+        if (blockToUpdate.type.isSourceBlock)
+        {
+            Vector3Int bottomPos = worldPos;
+            bottomPos.y--;
+            Block bottomBlock = chunkManager.GetBlockAtPosition(bottomPos);
+            if (bottomBlock == null || bottomBlock.type.name == "Air")
+            {
+                chunkManager.ModifyBlock(bottomPos, blockToUpdate);
+                
+                return false;
+            } else
+            {
+                //Vector3Int[] adjacentPositions =
+                //{
+                //    worldPos + Vector3Int.right,
+                //    worldPos - Vector3Int.right,
+                //    worldPos + new Vector3Int(0,0,1),
+                //    worldPos - new Vector3Int(0,0,1),
+                //};
+
+                //Block[] newBlocks =
+                //{
+                //    blockToUpdate,
+                //    blockToUpdate,
+                //    blockToUpdate,
+                //    blockToUpdate
+                //};
+
+                //chunkManager.ModifyBlocks(adjacentPositions.ToList(), newBlocks.ToList());
+                //return true;
+            }
+        } else if (blockToUpdate.type.affectedByGravity)
+        {
+            Vector3Int bottomPos = worldPos;
+            bottomPos.y--;
+            Block bottomBlock = chunkManager.GetBlockAtPosition(bottomPos);
+            if (bottomBlock == null || bottomBlock.type.name == "Air")
+            {
+                chunkManager.ModifyBlock(bottomPos, blockToUpdate);
+                chunkManager.ModifyBlock(worldPos, null);
+                return true;
+            }
+        }
+        else if (blockToUpdate.type.mustBeOnGrassBlock)
+        {
+            Vector3Int bottomPos = worldPos;
+            bottomPos.y--;
+            Block bottomBlock = chunkManager.GetBlockAtPosition(bottomPos);
+            if (bottomBlock == null || bottomBlock.type.name != "Grass")
+            {
+                chunkManager.ModifyBlock(bottomPos, null);
+                chunkManager.ModifyBlock(worldPos, null);
+                return true;
+            }
+        }
+
+        return false;
     }
 
 }

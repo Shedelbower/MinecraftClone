@@ -16,6 +16,10 @@ public class BlockType : ScriptableObject
     // Top, Bottom, Front, Back, Left, Right
     public Vector2Int[] atlasPositions;
     public bool isTransparent;
+    public bool isBillboard = false;
+    public bool affectedByGravity = false;
+    public bool isSourceBlock = false;
+    public bool mustBeOnGrassBlock = false;
 
     /*------------------------ STATIC ------------------------*/
 

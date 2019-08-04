@@ -10,13 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 28a08073b11cc4289a3c8ab2936eedeb, type: 3}
-  m_Name: Sand
+  m_Name: Tall Grass
   m_EditorClassIdentifier: 
-  index: 5
-  name: Sand
+  index: 7
+  name: Tall Grass
   atlasPositions:
-  - {x: 0, y: 2}
-  isTransparent: 0
-  isBillboard: 0
-  affectedByGravity: 1
+  - {x: 0, y: 4}
+  isTransparent: 1
+  isBillboard: 1
+  affectedByGravity: 0
   isSourceBlock: 0
+  mustBeOnGrassBlock: 1
