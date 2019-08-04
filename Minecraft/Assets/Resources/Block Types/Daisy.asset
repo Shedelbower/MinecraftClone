@@ -21,3 +21,4 @@ MonoBehaviour:
   affectedByGravity: 0
   isSourceBlock: 0
   mustBeOnGrassBlock: 1
+  digClip: {fileID: 8300000, guid: de8b9d159aec74abd87cf7d70758cf9b, type: 3}

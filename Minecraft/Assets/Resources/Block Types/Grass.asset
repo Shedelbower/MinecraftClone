@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28a08073b11cc4289a3c8ab2936eedeb, type: 3}
   m_Name: Grass
   m_EditorClassIdentifier: 
-  index: 0
+  index: 3
   name: Grass
   atlasPositions:
   - {x: 2, y: 1}
@@ -22,3 +22,8 @@ MonoBehaviour:
   - {x: 1, y: 1}
   - {x: 1, y: 1}
   isTransparent: 0
+  isBillboard: 0
+  affectedByGravity: 0
+  isSourceBlock: 0
+  mustBeOnGrassBlock: 0
+  digClip: {fileID: 8300000, guid: ff0ebe91ce87144f38d074af58fc58d2, type: 3}

@@ -17,3 +17,8 @@ MonoBehaviour:
   atlasPositions:
   - {x: 2, y: 0}
   isTransparent: 0
+  isBillboard: 0
+  affectedByGravity: 0
+  isSourceBlock: 0
+  mustBeOnGrassBlock: 0
+  digClip: {fileID: 8300000, guid: 1673b13581a174916be82f64e68d7944, type: 3}

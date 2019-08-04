@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28a08073b11cc4289a3c8ab2936eedeb, type: 3}
   m_Name: Yellow Flower
   m_EditorClassIdentifier: 
-  index: 9
+  index: 13
   name: Yellow Flower
   atlasPositions:
   - {x: 1, y: 4}
@@ -21,3 +21,4 @@ MonoBehaviour:
   affectedByGravity: 0
   isSourceBlock: 0
   mustBeOnGrassBlock: 1
+  digClip: {fileID: 8300000, guid: de8b9d159aec74abd87cf7d70758cf9b, type: 3}

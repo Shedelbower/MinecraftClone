@@ -317,6 +317,8 @@ public class PlayerController : MonoBehaviour
             blocks.Add(block);
 
             chunkManager.ModifyBlocks(positions, blocks);
+
+            PlayBlockSound(block.type.name, blockPos);
         }
     }
 
@@ -356,7 +358,25 @@ public class PlayerController : MonoBehaviour
             Block block = new Block("Air");
             blocks.Add(block);
 
+            Block breakingBlock = chunkManager.GetBlockAtPosition(blockPos);
+            if (breakingBlock != null)
+            {
+                PlayBlockSound(breakingBlock.type.name, blockPos);
+            }
+            
+
             chunkManager.ModifyBlocks(positions, blocks);
+
+            
+        }
+    }
+
+    private void PlayBlockSound(string blockTypeName, Vector3Int position)
+    {
+        AudioClip clip = BlockType.GetBlockType(blockTypeName).digClip;
+        if (clip != null)
+        {
+            AudioSource.PlayClipAtPoint(clip, position);
         }
     }
 

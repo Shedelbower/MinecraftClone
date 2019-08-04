@@ -12,8 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28a08073b11cc4289a3c8ab2936eedeb, type: 3}
   m_Name: Dirt
   m_EditorClassIdentifier: 
-  index: 0
+  index: 2
   name: Dirt
   atlasPositions:
   - {x: 0, y: 1}
   isTransparent: 0
+  isBillboard: 0
+  affectedByGravity: 0
+  isSourceBlock: 0
+  mustBeOnGrassBlock: 0
+  digClip: {fileID: 8300000, guid: 801f0ab45c0034068b6317ea59e20ba5, type: 3}

@@ -20,6 +20,7 @@ public class BlockType : ScriptableObject
     public bool affectedByGravity = false;
     public bool isSourceBlock = false;
     public bool mustBeOnGrassBlock = false;
+    public AudioClip digClip = null;
 
     /*------------------------ STATIC ------------------------*/
 
