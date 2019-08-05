@@ -22,6 +22,7 @@ public class BlockType : ScriptableObject
     public bool mustBeOnGrassBlock = false;
     public AudioClip digClip = null;
     public AudioClip[] stepClips;
+    public ParticleSystem.MinMaxGradient breakParticleColors;
 
     /*------------------------ STATIC ------------------------*/
 

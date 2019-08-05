@@ -6,6 +6,7 @@ public class PlayerController : MonoBehaviour
 {
     public CharacterController characterController;
     public ChunkManager chunkManager;
+    public Transform body;
     public Transform feet;
     public AudioSource stepAudioSource;
     [Range(0.0f, 100f)] public float baseSpeed = 10f;
@@ -14,6 +15,7 @@ public class PlayerController : MonoBehaviour
     [Range(0.0f, 2.0f)] public float waterSpeedModifier = 0.5f;
     public GameObject splashEffect;
     public GameObject explosionEffect;
+    public GameObject breakEffect;
 
     public GameObject tntPrefab;
 
@@ -281,7 +283,13 @@ public class PlayerController : MonoBehaviour
         rotX = Mathf.Clamp(rotX, -clampAngle, clampAngle);
 
         Quaternion localRotation = Quaternion.Euler(rotX, rotY, 0.0f);
-        camera.parent.rotation = localRotation;
+        camera.rotation = localRotation;
+
+        body.rotation = camera.rotation;
+        Vector3 angles = body.eulerAngles;
+        angles.x = 0.0f;
+        angles.z = 0.0f;
+        body.eulerAngles = angles;
     }
 
     private void LaunchTNT()
@@ -404,9 +412,19 @@ public class PlayerController : MonoBehaviour
             blocks.Add(block);
 
             Block breakingBlock = chunkManager.GetBlockAtPosition(blockPos);
-            if (breakingBlock != null)
+            if (breakingBlock != null && breakingBlock.type != null)
             {
                 PlayBlockSound(breakingBlock.type.name, blockPos);
+
+
+                GameObject effect = Instantiate(breakEffect, null);
+                effect.transform.position = blockPos;
+
+                ParticleSystem ps = effect.GetComponent<ParticleSystem>();
+                ParticleSystem.MainModule main = ps.main;
+
+                main.startColor = breakingBlock.type.breakParticleColors;
+                    
             }
             
 
