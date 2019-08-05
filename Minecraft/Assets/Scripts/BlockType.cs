@@ -21,6 +21,7 @@ public class BlockType : ScriptableObject
     public bool isSourceBlock = false;
     public bool mustBeOnGrassBlock = false;
     public AudioClip digClip = null;
+    public AudioClip[] stepClips;
 
     /*------------------------ STATIC ------------------------*/
 

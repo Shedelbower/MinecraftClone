@@ -22,3 +22,5 @@ MonoBehaviour:
   isSourceBlock: 0
   mustBeOnGrassBlock: 0
   digClip: {fileID: 8300000, guid: 1673b13581a174916be82f64e68d7944, type: 3}
+  stepClips:
+  - {fileID: 8300000, guid: e6c88b998612c4cd0bf5db5b15e5187d, type: 3}

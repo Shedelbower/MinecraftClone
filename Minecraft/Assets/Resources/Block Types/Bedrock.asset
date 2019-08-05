@@ -22,3 +22,10 @@ MonoBehaviour:
   isSourceBlock: 0
   mustBeOnGrassBlock: 0
   digClip: {fileID: 8300000, guid: 2b5eb7270cec245ecbc8e11bbaf9c296, type: 3}
+  stepClips:
+  - {fileID: 8300000, guid: e6c88b998612c4cd0bf5db5b15e5187d, type: 3}
+  - {fileID: 8300000, guid: 0881b4e81551f4f8e9f9bc43a6943481, type: 3}
+  - {fileID: 8300000, guid: f12039a2a30ba4db1823c619c9310535, type: 3}
+  - {fileID: 8300000, guid: 0304af60e843a4acaafeda8a02907cae, type: 3}
+  - {fileID: 8300000, guid: 357a84b54cd0848be90aae266696daf4, type: 3}
+  - {fileID: 8300000, guid: 94cd9f063cd9c4c7d8475d53ff81c07b, type: 3}

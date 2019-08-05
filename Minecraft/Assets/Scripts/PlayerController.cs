@@ -7,6 +7,7 @@ public class PlayerController : MonoBehaviour
     public CharacterController characterController;
     public ChunkManager chunkManager;
     public Transform feet;
+    public AudioSource stepAudioSource;
     [Range(0.0f, 100f)] public float baseSpeed = 10f;
     [Range(0.0f, 100f)] public float jumpPower = 10f;
     [Range(0.0f, 1.0f)] public float sidewaysSpeedModifier = 0.5f;
@@ -25,6 +26,7 @@ public class PlayerController : MonoBehaviour
     private float _speed;
 
     private Vector3Int _prevPosition;
+    private Vector3Int _currPosition;
     private BlockType _prevType;
 
     private bool _isJumping = false;
@@ -66,12 +68,12 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        Vector3Int currPosition = new Vector3Int((int)transform.position.x, (int)transform.position.y, (int)transform.position.z);
+        _currPosition = new Vector3Int((int)transform.position.x, (int)transform.position.y, (int)transform.position.z);
 
-        if (currPosition != _prevPosition)
+        if (_currPosition != _prevPosition)
         {
             chunkManager.UpdateLoadedChunks();
-            _prevPosition = currPosition;
+            _prevPosition = _currPosition;
 
             // Check if feet in water
             Block currBlock = chunkManager.GetBlockAtPosition(Vector3Int.RoundToInt(feet.position));
@@ -154,6 +156,11 @@ public class PlayerController : MonoBehaviour
             movement += this.transform.right * _speed * sidewaysSpeedModifier;
         }
 
+        if (movement.sqrMagnitude > 0.001f)
+        {
+            PlayStepAudio();
+        }
+
         movement = camera.rotation * movement;
 
         float mag = movement.magnitude;
@@ -193,6 +200,26 @@ public class PlayerController : MonoBehaviour
 
 
         
+    }
+
+    private void PlayStepAudio()
+    {
+        if (stepAudioSource.isPlaying == false)
+        {
+            Vector3Int positionBeneathFeet = _currPosition + Vector3Int.down;
+            Block blockBeneathFeet = chunkManager.GetBlockAtPosition(positionBeneathFeet);
+            if (blockBeneathFeet != null && blockBeneathFeet.type != null)
+            {
+                AudioClip[] stepClips = blockBeneathFeet.type.stepClips;
+                if (stepClips != null && stepClips.Length > 0)
+                {
+                    AudioClip clip = stepClips[Random.Range(0, stepClips.Length - 1)];
+                    stepAudioSource.clip = clip;
+                    stepAudioSource.Play();
+                }
+                
+            }
+        }
     }
 
     private void SetMaterialColors(Color color)
@@ -324,6 +351,10 @@ public class PlayerController : MonoBehaviour
         Vector3Int blockPos;
         if (RaycastToBlock(10.0f, true, out blockPos))
         {
+            if (blockPos == _currPosition)
+            {
+                return; // Don't place block in feet space
+            }
             List<Vector3Int> positions = new List<Vector3Int>();
             List<Block> blocks = new List<Block>();
 
