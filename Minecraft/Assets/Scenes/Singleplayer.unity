@@ -1642,7 +1642,7 @@ MonoBehaviour:
   feet: {fileID: 2051302010}
   stepAudioSource: {fileID: 2051302011}
   baseSpeed: 7.5
-  jumpPower: 20
+  jumpPower: 10
   sidewaysSpeedModifier: 0.5
   waterSpeedModifier: 0.5
   splashEffect: {fileID: 5811183582667815427, guid: bb1c0263b85b54f2f95e723ed5849e1a,

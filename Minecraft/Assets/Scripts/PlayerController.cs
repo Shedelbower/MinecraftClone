@@ -11,7 +11,7 @@ public class PlayerController : MonoBehaviour
     public Transform feet;
     public AudioSource stepAudioSource;
     [Range(0.0f, 100f)] public float baseSpeed = 10f;
-    [Range(0.0f, 100f)] public float jumpPower = 10f;
+    [Range(0.0f, 100f)] public float jumpPower = 3f;
     [Range(0.0f, 1.0f)] public float sidewaysSpeedModifier = 0.5f;
     [Range(0.0f, 2.0f)] public float waterSpeedModifier = 0.5f;
     public GameObject splashEffect;
@@ -34,6 +34,7 @@ public class PlayerController : MonoBehaviour
 
     private bool _isJumping = false;
     private float _jumpTimer = 0.0f;
+    private float _jumpYVelocity = 0.0f;
     [SerializeField] private float _jumpDuration = 2.0f;
 
     [SerializeField] private bool _isInWater = false;
@@ -122,7 +123,6 @@ public class PlayerController : MonoBehaviour
         
         if (Input.GetMouseButtonDown(1))
         {
-            //PlaceBlock("Sand");
             PlaceSameBlock();
         }
         else if (Input.GetMouseButtonDown(0))
@@ -131,14 +131,25 @@ public class PlayerController : MonoBehaviour
         }
         else if (Input.GetKeyDown(KeyCode.Q))
         {
-            //Boom();
             LaunchTNT();
         }
 
-        if (Input.GetKeyDown(KeyCode.Space) && _isInWater == false && characterController.isGrounded)
+        //if ((characterController.isGrounded && _isJumping == true) || _isInWater == true)
+        //{
+        //    _isJumping = false;
+        //}
+
+        if (characterController.isGrounded || _isInWater)
+        {
+            _isJumping = false;
+            _jumpYVelocity = 0.0f;
+        }
+
+        if (Input.GetKey(KeyCode.Space) && _isInWater == false && characterController.isGrounded)
         {
             _isJumping = true;
             _jumpTimer = 0.0f;
+            _jumpYVelocity = jumpPower;
         }
 
         Vector3 movement = Vector3.zero;
@@ -172,29 +183,24 @@ public class PlayerController : MonoBehaviour
         movement.y = 0.0f;
         movement = movement.normalized * mag;
 
-        if (_isJumping)
-        {
-            _jumpTimer += Time.deltaTime;
-            float t = Mathf.Lerp(jumpPower, 0.0f, _jumpTimer / _jumpDuration);
-            movement += Vector3.up * t;
 
-            if (_jumpTimer >= _jumpDuration || _isInWater)
-            {
-                _isJumping = false;
-            }
-        }
+        float gravity = -30f;
+        _jumpYVelocity += gravity * Time.deltaTime;
 
-        float gravity = -9.0f;
-        if (_isInWater)
-        {
-            gravity *= waterSpeedModifier;
-        }
-        movement += Vector3.up * gravity;
+        Vector3 jumpVelocity = Vector3.up * _jumpYVelocity;
+        //if (_isInWater)
+        //{
+        //    jumpVelocity *= waterSpeedModifier;
+        //}
+        movement += jumpVelocity;
 
         if (Input.GetKey(KeyCode.Space) && _isInWater)
         {
-            movement += Vector3.up * _speed * waterSpeedModifier;
-            movement -= Vector3.up * gravity; // Remove effects of gravity
+            movement += Vector3.up * 2f;
+            //movement -= Vector3.up * gravity * Time.deltaTime; // Remove effects of gravity
+        } else if (_isJumping == false && characterController.isGrounded == false)
+        {
+            movement += Vector3.up * gravity * Time.deltaTime;
         }
 
         characterController.Move(movement * Time.deltaTime);
