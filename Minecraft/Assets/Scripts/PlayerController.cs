@@ -54,7 +54,8 @@ public class PlayerController : MonoBehaviour
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
-        initialSkyColor = Camera.main.backgroundColor;
+        //initialSkyColor = Camera.main.backgroundColor;
+        initialSkyColor = RenderSettings.fogColor;
 
         _speed = baseSpeed;
 
@@ -112,13 +113,11 @@ public class PlayerController : MonoBehaviour
         }
 
 
-        //if (Input.GetKeyDown(KeyCode.L))
-        //{
-        //    Cursor.lockState = CursorLockMode.Locked;
-        //} else if (Input.GetKeyDown(KeyCode.K))
-        //{
-        //    Cursor.lockState = CursorLockMode.None;
-        //}
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
 
         
         if (Input.GetMouseButtonDown(1))
