@@ -7,6 +7,9 @@ public class ChunkManager : MonoBehaviour
 
     private static readonly float CHUNK_UPDATE_INTERVAL = 0.5f;
 
+    public bool useRandomSeed = false;
+    public int seed;
+
     public PlayerController player;
     public Vector3Int loadDistance = new Vector3Int(4,1,4);
     public Vector3Int chunkSize = Vector3Int.one * 16;
@@ -41,6 +44,11 @@ public class ChunkManager : MonoBehaviour
 
     public void Initialize()
     {
+        if (useRandomSeed)
+        {
+            seed = UnityEngine.Random.Range(int.MinValue,int.MaxValue);
+        }
+
         _chunks = new Dictionary<Vector3Int, WorldChunk>();
         _generatedChunkIDs = new HashSet<Vector3Int>();
         _loadedChunkIDs = new HashSet<Vector3Int>();
@@ -246,7 +254,7 @@ public class ChunkManager : MonoBehaviour
         chunk.chunkFoliageMaterial = this.chunkFoliageMaterial;
 
         //Debug.Log("Init Chunk [" + pos.x + "," + pos.y + "," + pos.z + "]");
-        chunk.Initialize(pos, chunkSize);
+        chunk.Initialize(pos, chunkSize, seed);
         chunk.chunkManager = this;
 
         return chunk;

@@ -41,11 +41,16 @@ public class WorldChunk : MonoBehaviour
     protected Vector3Int _minCorner;
     protected Block[,,] _blocks;
     protected AtlasReader _atlasReader;
+    protected int _seed;
 
-    public void Initialize(Vector3Int minCorner, Vector3Int size)
+    public void Initialize(Vector3Int minCorner, Vector3Int size, int seed)
     {
         _size = size;
         _minCorner = minCorner;
+        _seed = seed;
+
+        //UnityEngine.Random.InitState(_seed);
+        //_seedOffset = new Vector2Int(Random.Range(int.MinValue, int.MaxValue), Random.Range(int.MinValue, int.MaxValue));
 
         this.transform.position = minCorner;
         this.gameObject.isStatic = true;
@@ -60,7 +65,7 @@ public class WorldChunk : MonoBehaviour
             {
                 for (int y = 0; y < _size.y; y++)
                 {
-                    BlockType type = GetBlockType(x + _minCorner.x, y + _minCorner.y, z + _minCorner.z);
+                    BlockType type = GetBlockType(x + _minCorner.x, y + _minCorner.y, z + _minCorner.z, _seed);
 
                     if (type != null)
                     {
@@ -73,12 +78,12 @@ public class WorldChunk : MonoBehaviour
         Debug.Log("Initialized Blocks in Chunk");
     }
 
-    public static BlockType GetBlockType(Vector3 pos)
+    public static BlockType GetBlockType(Vector3 pos, int seed)
     {
         int x = Mathf.RoundToInt(pos.x);
         int y = Mathf.RoundToInt(pos.y);
         int z = Mathf.RoundToInt(pos.z);
-        return GetBlockType(x,y,z);
+        return GetBlockType(x,y,z,seed);
     }
 
     public BlockType ReadBlockType(Vector3Int worldPos)
@@ -89,9 +94,15 @@ public class WorldChunk : MonoBehaviour
         return type;
     }
 
-    public static BlockType GetBlockType(int x, int y, int z)
+    public static BlockType GetBlockType(int x, int y, int z, int seed)
     {
-        Vector2Int offset = new Vector2Int(10000, 100000);
+
+        //Vector2Int offset = _seedOffset;
+        Random.State prevState = Random.state;
+        UnityEngine.Random.InitState(seed);
+        Vector2Int offset = new Vector2Int(Random.Range(-100, 100), Random.Range(-100, 100));
+        Random.state = prevState;
+
         int noise = Mathf.FloorToInt(Mathf.PerlinNoise(1 * (x) / (float)32 + offset.x, 1 * (z) / (float)32 + offset.y) * 30);
         noise += 30;
 
@@ -107,14 +118,17 @@ public class WorldChunk : MonoBehaviour
         {
             type = BlockType.GetBlockType("Stone");
 
-            if (y < noise - 10 && Random.value < 0.05f)
+            float p1 = Mathf.PerlinNoise(x / (float)2 + offset.x + 100, z / (float)2 + offset.y + 100);
+
+            if (y < noise - 10 && p1 > 0.7f)
             {
-                type = BlockType.GetBlockType("Iron Ore");
+                float p2 = Mathf.PerlinNoise(y / (float)3, 0);
+                if (p2 > 0.7f)
+                {
+                    type = BlockType.GetBlockType("Iron Ore");
+                }
+                
             }
-            //else if (y < noise - 5 && Random.value < 0.3f)
-            //{
-            //    type = BlockType.GetBlockType("Gravel");
-            //}
         }
         else if (y < noise)
         {
@@ -531,7 +545,7 @@ public class WorldChunk : MonoBehaviour
                 }
                 else
                 {
-                    ntype = GetBlockType(worldPos);
+                    ntype = GetBlockType(worldPos, _seed);
                 }
 
             }
