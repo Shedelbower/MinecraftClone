@@ -5,6 +5,7 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     public CharacterController characterController;
+    public MonitorController monitorController;
     public ChunkManager chunkManager;
     public Transform body;
     public Transform feet;
@@ -23,7 +24,7 @@ public class PlayerController : MonoBehaviour
     private Color initialSkyColor;
     public Material[] materialsToColor;
 
-    public Transform camera;
+    public new Transform camera;
 
     private float _speed;
 
@@ -74,6 +75,8 @@ public class PlayerController : MonoBehaviour
 
         if (_currPosition != _prevPosition)
         {
+            monitorController.OnBlockTraveled();
+
             chunkManager.UpdateLoadedChunks();
             _prevPosition = _currPosition;
 
@@ -300,47 +303,49 @@ public class PlayerController : MonoBehaviour
         tnt.Launch(camera.forward);
     }
 
-    private void Boom()
-    {
-        Vector3Int center;
-        if (RaycastToBlock(30.0f, true, out center) == false)
-        {
-            return;
-        }
+    //private void Boom()
+    //{
+    //    Vector3Int center;
+    //    if (RaycastToBlock(30.0f, true, out center) == false)
+    //    {
+    //        return;
+    //    }
 
-        int blastRadius = 4;
+    //    int blastRadius = 4;
 
-        List<Vector3Int> positions = new List<Vector3Int>();
+    //    List<Vector3Int> positions = new List<Vector3Int>();
 
-        for (int x = -blastRadius; x <= blastRadius; x++)
-        {
-            for (int y = -blastRadius; y <= blastRadius; y++)
-            {
-                for (int z = -blastRadius; z <= blastRadius; z++)
-                {
-                    int manhattanDist = Mathf.Abs(x) + Mathf.Abs(y) + Mathf.Abs(z);
-                    if (manhattanDist <= blastRadius)
-                    {
-                        Vector3Int pos = new Vector3Int(x, y, z) + center;
-                        positions.Add(pos);
-                    }
-                }
-            }
-        }
+    //    for (int x = -blastRadius; x <= blastRadius; x++)
+    //    {
+    //        for (int y = -blastRadius; y <= blastRadius; y++)
+    //        {
+    //            for (int z = -blastRadius; z <= blastRadius; z++)
+    //            {
+    //                int manhattanDist = Mathf.Abs(x) + Mathf.Abs(y) + Mathf.Abs(z);
+    //                if (manhattanDist <= blastRadius)
+    //                {
+    //                    Vector3Int pos = new Vector3Int(x, y, z) + center;
+    //                    positions.Add(pos);
+    //                }
+    //            }
+    //        }
+    //    }
 
-        List<Block> replacements = new List<Block>();
-        BlockType airType = BlockType.GetBlockType("Air");
-        for (int i = 0; i < positions.Count; i++)
-        {
-            Block replacement = new Block(airType);
-            replacements.Add(replacement);
-        }
+    //    List<Block> replacements = new List<Block>();
+    //    BlockType airType = BlockType.GetBlockType("Air");
+    //    for (int i = 0; i < positions.Count; i++)
+    //    {
+    //        Block replacement = new Block(airType);
+    //        replacements.Add(replacement);
+    //    }
 
-        chunkManager.ModifyBlocks(positions, replacements);
+    //    monitorController.OnBlockDestroyed(replacements.Count);
 
-        GameObject effect = Instantiate(explosionEffect, null) as GameObject;
-        effect.transform.position = center;
-    }
+    //    chunkManager.ModifyBlocks(positions, replacements);
+
+    //    GameObject effect = Instantiate(explosionEffect, null) as GameObject;
+    //    effect.transform.position = center;
+    //}
 
     private void PlaceBlock(string blockTypeName)
     {
@@ -372,6 +377,8 @@ public class PlayerController : MonoBehaviour
             chunkManager.ModifyBlocks(positions, blocks);
 
             PlayBlockSound(block.type.name, blockPos);
+
+            monitorController.OnBlockPlaced();
         }
     }
 
@@ -424,7 +431,9 @@ public class PlayerController : MonoBehaviour
                 ParticleSystem.MainModule main = ps.main;
 
                 main.startColor = breakingBlock.type.breakParticleColors;
-                    
+
+                monitorController.OnBlockDestroyed();
+
             }
             
 

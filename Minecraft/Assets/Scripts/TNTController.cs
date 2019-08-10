@@ -69,6 +69,8 @@ public class TNTController : MonoBehaviour
 
             List<Vector3Int> positions = new List<Vector3Int>();
 
+            int nonAirBlockCount = 0;
+
             for (int x = -blastRadius; x <= blastRadius; x++)
             {
                 for (int y = -blastRadius; y <= blastRadius; y++)
@@ -79,11 +81,21 @@ public class TNTController : MonoBehaviour
                         if (dist <= blastRadius)
                         {
                             Vector3Int pos = new Vector3Int(x, y, z) + center;
-                            positions.Add(pos);
+
+                            Block b = _chunkManager.GetBlockAtPosition(pos);
+                            if (b != null && b.type != null && b.type.name != "Air")
+                            {
+                                nonAirBlockCount++;
+
+                                positions.Add(pos);
+                            }
                         }
                     }
                 }
             }
+
+            MonitorController mc = GameObject.Find("Monitor").GetComponent<MonitorController>();
+            mc.OnBlocksExploded(nonAirBlockCount);
 
             List<Block> replacements = new List<Block>();
             BlockType airType = BlockType.GetBlockType("Air");

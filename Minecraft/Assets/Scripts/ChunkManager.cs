@@ -16,6 +16,11 @@ public class ChunkManager : MonoBehaviour
     public Material chunkWaterMaterial;
     public Material chunkFoliageMaterial;
 
+    public int LoadedChunkCount
+    {
+        get { return _chunks.Count; }
+    }
+
     private Dictionary<Vector3Int, WorldChunk> _chunks; // All chunks that have been initialized
     private HashSet<Vector3Int> _generatedChunkIDs;     // Chunks that have had their terrain data generated, though are not necessarily visible.
     private HashSet<Vector3Int> _loadedChunkIDs;        // Chunks that are currently loaded and visible
