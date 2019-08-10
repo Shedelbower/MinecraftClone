@@ -23,6 +23,7 @@ public class BlockType : ScriptableObject
     public AudioClip digClip = null;
     public AudioClip[] stepClips;
     public ParticleSystem.MinMaxGradient breakParticleColors;
+    public int blockBlastResistance = 0;
 
     /*------------------------ STATIC ------------------------*/
 

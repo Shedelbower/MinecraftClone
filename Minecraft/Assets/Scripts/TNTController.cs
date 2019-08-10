@@ -65,7 +65,7 @@ public class TNTController : MonoBehaviour
             // Don't cause damage when in water
         } else
         {
-            int blastRadius = 4;
+            int blastRadius = 5;
 
             List<Vector3Int> positions = new List<Vector3Int>();
 
@@ -83,11 +83,18 @@ public class TNTController : MonoBehaviour
                             Vector3Int pos = new Vector3Int(x, y, z) + center;
 
                             Block b = _chunkManager.GetBlockAtPosition(pos);
-                            if (b != null && b.type != null && b.type.name != "Air")
+                            BlockType type = b?.type;
+                            if (type != null)
                             {
-                                nonAirBlockCount++;
+                                
+                                float blastPower = 2f / dist * blastRadius;
+                                if (blastPower >= type.blockBlastResistance)
+                                {
+                                    nonAirBlockCount++;
+                                    positions.Add(pos);
+                                }
 
-                                positions.Add(pos);
+                                
                             }
                         }
                     }
