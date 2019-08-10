@@ -212,6 +212,12 @@ public class WorldChunk : MonoBehaviour
             }
         }
 
+        if (IsModified == false && meshes.Count == 0)
+        {
+            // Block is entirely invisible, so don't make the mesh game object.
+            return null;
+        }
+
         Mesh final = new Mesh();
         CombineInstance[] combine = new CombineInstance[meshes.Count];
 
@@ -278,6 +284,12 @@ public class WorldChunk : MonoBehaviour
                     }
                 }
             }
+        }
+
+        if (IsModified == false && meshes.Count == 0)
+        {
+            // No visible water blocks in chunk, so don't make the mesh game object.
+            return null;
         }
 
         Mesh final = new Mesh();
@@ -354,6 +366,12 @@ public class WorldChunk : MonoBehaviour
                     }
                 }
             }
+        }
+
+        if (IsModified == false && meshes.Count == 0)
+        {
+            // No visible foliage blocks in chunk, so don't make the mesh game object.
+            return null;
         }
 
         Mesh final = new Mesh();

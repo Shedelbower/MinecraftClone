@@ -151,19 +151,16 @@ public class ChunkManager : MonoBehaviour
     private void Update()
     {
 
-        for (int i = 0; i < 4; i++)
+        float startTime = Time.realtimeSinceStartup;
+        float elapsedTime = 0.0f;
+        while (_chunkLoadQueue.Count > 0 && elapsedTime < 0.02f)
         {
-            if (_chunkLoadQueue.Count == 0)
-            {
-                break;
-            }
             LoadNextChunk();
+            elapsedTime = Time.realtimeSinceStartup - startTime;
         }
-
 
         if (_chunkUnloadQueue.Count > 0)
         {
-            //UnloadNextChunk();
             UnloadChunksImmediately();
         }
 
