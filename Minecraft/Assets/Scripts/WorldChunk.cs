@@ -232,17 +232,6 @@ public class WorldChunk : MonoBehaviour
             return null;
         }
 
-        Mesh final = new Mesh();
-        CombineInstance[] combine = new CombineInstance[meshes.Count];
-
-        for (int i = 0; i < combine.Length; i++)
-        {
-            combine[i].mesh = meshes[i];
-            combine[i].transform = translations[i];
-        }
-
-        final.CombineMeshes(combine, true);
-
         string childName = "Mesh (Opaque)";
         GameObject go = transform.Find(childName)?.gameObject;
         if (go == null)
@@ -262,6 +251,21 @@ public class WorldChunk : MonoBehaviour
         mf = mf == null ? go.AddComponent<MeshFilter>() : mf;
         mr = mr == null ? go.AddComponent<MeshRenderer>() : mr;
         mc = mc == null ? go.AddComponent<MeshCollider>() : mc;
+
+        //Mesh final = new Mesh();
+        Mesh final = mf.sharedMesh ?? new Mesh();
+        final.Clear();
+        CombineInstance[] combine = new CombineInstance[meshes.Count];
+
+        for (int i = 0; i < combine.Length; i++)
+        {
+            combine[i].mesh = meshes[i];
+            combine[i].transform = translations[i];
+        }
+
+        final.CombineMeshes(combine, true);
+
+        
 
         mf.sharedMesh = final;
         mr.sharedMaterial = chunkOpaqueMaterial;
@@ -388,17 +392,6 @@ public class WorldChunk : MonoBehaviour
             return null;
         }
 
-        Mesh final = new Mesh();
-        CombineInstance[] combine = new CombineInstance[meshes.Count];
-
-        for (int i = 0; i < combine.Length; i++)
-        {
-            combine[i].mesh = meshes[i];
-            combine[i].transform = translations[i];
-        }
-
-        final.CombineMeshes(combine, true);
-
         string childName = "Mesh (Foliage)";
         GameObject go = transform.Find(childName)?.gameObject;
         if (go == null)
@@ -413,10 +406,6 @@ public class WorldChunk : MonoBehaviour
             go.layer = LayerMask.NameToLayer("Foliage");
         }
 
-        //GameObject go = new GameObject("Mesh (Water)");
-        //go.isStatic = true;
-        //go.transform.parent = this.transform;
-        //go.transform.localPosition = new Vector3(0, -0.0625f, 0); // Shift down to create gap between shore and the water's surface.
         MeshFilter mf = go.GetComponent<MeshFilter>();
         MeshRenderer mr = go.GetComponent<MeshRenderer>();
         MeshCollider mc = go.GetComponent<MeshCollider>();
@@ -424,6 +413,19 @@ public class WorldChunk : MonoBehaviour
         mf = mf == null ? go.AddComponent<MeshFilter>() : mf;
         mr = mr == null ? go.AddComponent<MeshRenderer>() : mr;
         mc = mc == null ? go.AddComponent<MeshCollider>() : mc;
+
+        Mesh final = mf.sharedMesh ?? new Mesh();
+        final.Clear();
+        CombineInstance[] combine = new CombineInstance[meshes.Count];
+
+        for (int i = 0; i < combine.Length; i++)
+        {
+            combine[i].mesh = meshes[i];
+            combine[i].transform = translations[i];
+        }
+
+        final.CombineMeshes(combine, true);
+
 
         mf.sharedMesh = final;
         mr.sharedMaterial = chunkFoliageMaterial;
