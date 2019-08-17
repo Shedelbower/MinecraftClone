@@ -69,6 +69,36 @@ public class PlayerController : MonoBehaviour
         Vector3 rot = camera.localRotation.eulerAngles;
         rotY = rot.y;
         rotX = rot.x;
+
+        PlacePlayerOnSurface();
+    }
+
+    void PlacePlayerOnSurface()
+    {
+        Vector3 pos = transform.position;
+        pos.y = 60;
+        transform.position = pos;
+        bool isOnGround = false;
+        int iterations = 0;
+        while (isOnGround == false)
+        {
+            iterations++;
+            if (iterations > 100)
+            {
+                Debug.LogWarning("Ground too far from player.");
+                break;
+            }
+            Block currBlock = chunkManager.GetBlockAtPosition(Vector3Int.RoundToInt(feet.position));
+            if (currBlock == null || currBlock.type == null)
+            {
+                this.transform.position += Vector3.down;
+                continue;
+            }
+
+            isOnGround = true;
+        }
+
+        transform.position += Vector3.up;
     }
 
     void Update()
@@ -142,7 +172,7 @@ public class PlayerController : MonoBehaviour
         if (characterController.isGrounded || _isInWater)
         {
             _isJumping = false;
-            _jumpYVelocity = 0.0f;
+            _jumpYVelocity /= 2.0f;
         }
 
         if (Input.GetKey(KeyCode.Space) && _isInWater == false && characterController.isGrounded)
@@ -210,6 +240,14 @@ public class PlayerController : MonoBehaviour
 
 
         
+    }
+
+    private void LateUpdate()
+    {
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            PlacePlayerOnSurface();
+        }
     }
 
     private void PlayStepAudio()
@@ -407,6 +445,11 @@ public class PlayerController : MonoBehaviour
             return;
         }
         BlockType targetType = targetBlock.type;
+
+        if (targetType.isBillboard)
+        {
+            return; // Don't place foliage blocks like grass and flowers.
+        }
 
         PlaceBlock(targetType);
     }
