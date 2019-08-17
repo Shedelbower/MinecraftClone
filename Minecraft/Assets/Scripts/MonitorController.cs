@@ -11,6 +11,7 @@ public class MonitorController : MonoBehaviour
     public Text destroyedCountText;
     public Text explodedCountText;
     public Text traveledCountText;
+    public Text memoryUsedText;
 
     public ChunkManager chunkManager;
 
@@ -23,11 +24,6 @@ public class MonitorController : MonoBehaviour
 
     private float _deltaTime = 0.0f;
 
-
-    private void Start()
-    {
-        
-    }
 
     private void Update()
     {
@@ -69,6 +65,8 @@ public class MonitorController : MonoBehaviour
             explodedCountText.text = _blocksExplodedCount.ToString();
 
             chunkCountText.text = chunkManager.LoadedChunkCount.ToString();
+
+            memoryUsedText.text = System.String.Format("{0:n0}", System.GC.GetTotalMemory(false) / 1000000.0f);
         }
     }
 
