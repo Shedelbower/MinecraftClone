@@ -103,7 +103,7 @@ public class WorldChunk : MonoBehaviour
         Vector2Int offset = new Vector2Int(Random.Range(-100, 100), Random.Range(-100, 100));
         Random.state = prevState;
 
-        int noise = Mathf.FloorToInt(Mathf.PerlinNoise(1 * (x) / (float)32 + offset.x, 1 * (z) / (float)32 + offset.y) * 30);
+        int noise = Mathf.FloorToInt(Mathf.PerlinNoise(1 * (x) / (float)32 + offset.x, 1 * (z) / (float)32 + offset.y) * 25);
         noise += 30;
 
         BlockType type = null;
@@ -117,6 +117,11 @@ public class WorldChunk : MonoBehaviour
         else if (y < noise - 3)
         {
             type = BlockType.GetBlockType("Stone");
+
+            if (y < noise - 35 && Random.value < 0.001f)
+            {
+                type = BlockType.GetBlockType("Diamond Ore");
+            }
 
             float p1 = Mathf.PerlinNoise(x / (float)2 + offset.x + 100, z / (float)2 + offset.y + 100);
 

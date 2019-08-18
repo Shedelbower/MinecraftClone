@@ -10,6 +10,7 @@ public class PlayerController : MonoBehaviour
     public Transform body;
     public Transform feet;
     public AudioSource stepAudioSource;
+    public GameObject canvas;
     [Range(0.0f, 100f)] public float baseSpeed = 10f;
     [Range(0.0f, 100f)] public float jumpPower = 3f;
     [Range(0.0f, 1.0f)] public float sidewaysSpeedModifier = 0.5f;
@@ -150,13 +151,18 @@ public class PlayerController : MonoBehaviour
             Cursor.visible = true;
         }
 
-        
+
         if (Input.GetMouseButtonDown(1))
         {
             PlaceSameBlock();
         }
         else if (Input.GetMouseButtonDown(0))
         {
+            if (Cursor.lockState == CursorLockMode.None)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
             BreakBlock();
         }
         else if (Input.GetKeyDown(KeyCode.Q))
@@ -164,10 +170,11 @@ public class PlayerController : MonoBehaviour
             LaunchTNT();
         }
 
-        //if ((characterController.isGrounded && _isJumping == true) || _isInWater == true)
-        //{
-        //    _isJumping = false;
-        //}
+        if (Input.GetKeyDown(KeyCode.H))
+        {
+            this.ToggleUI();
+        }
+
 
         if (characterController.isGrounded || _isInWater)
         {
@@ -236,7 +243,11 @@ public class PlayerController : MonoBehaviour
         characterController.Move(movement * Time.deltaTime);
 
 
-        DoMouseRotation();
+        if (Cursor.lockState == CursorLockMode.Locked)
+        {
+            DoMouseRotation();
+        }
+        
 
 
         
@@ -346,49 +357,10 @@ public class PlayerController : MonoBehaviour
         tnt.Launch(camera.forward);
     }
 
-    //private void Boom()
-    //{
-    //    Vector3Int center;
-    //    if (RaycastToBlock(30.0f, true, out center) == false)
-    //    {
-    //        return;
-    //    }
-
-    //    int blastRadius = 4;
-
-    //    List<Vector3Int> positions = new List<Vector3Int>();
-
-    //    for (int x = -blastRadius; x <= blastRadius; x++)
-    //    {
-    //        for (int y = -blastRadius; y <= blastRadius; y++)
-    //        {
-    //            for (int z = -blastRadius; z <= blastRadius; z++)
-    //            {
-    //                int manhattanDist = Mathf.Abs(x) + Mathf.Abs(y) + Mathf.Abs(z);
-    //                if (manhattanDist <= blastRadius)
-    //                {
-    //                    Vector3Int pos = new Vector3Int(x, y, z) + center;
-    //                    positions.Add(pos);
-    //                }
-    //            }
-    //        }
-    //    }
-
-    //    List<Block> replacements = new List<Block>();
-    //    BlockType airType = BlockType.GetBlockType("Air");
-    //    for (int i = 0; i < positions.Count; i++)
-    //    {
-    //        Block replacement = new Block(airType);
-    //        replacements.Add(replacement);
-    //    }
-
-    //    monitorController.OnBlockDestroyed(replacements.Count);
-
-    //    chunkManager.ModifyBlocks(positions, replacements);
-
-    //    GameObject effect = Instantiate(explosionEffect, null) as GameObject;
-    //    effect.transform.position = center;
-    //}
+    private void ToggleUI()
+    {
+        canvas.SetActive(!canvas.activeSelf);
+    }
 
     private void PlaceBlock(string blockTypeName)
     {
@@ -481,6 +453,11 @@ public class PlayerController : MonoBehaviour
                 main.startColor = breakingBlock.type.breakParticleColors;
 
                 monitorController.OnBlockDestroyed();
+
+                if (breakingBlock.type.name == "Diamond Ore")
+                {
+                    monitorController.OnDiamondMined();
+                }
 
             }
             

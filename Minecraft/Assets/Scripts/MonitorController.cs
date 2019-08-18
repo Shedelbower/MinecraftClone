@@ -12,6 +12,7 @@ public class MonitorController : MonoBehaviour
     public Text explodedCountText;
     public Text traveledCountText;
     public Text memoryUsedText;
+    public Text diamondText;
 
     public ChunkManager chunkManager;
 
@@ -19,6 +20,7 @@ public class MonitorController : MonoBehaviour
     private int _blocksDestroyedCount = 0;
     private int _blocksTraveledCount = 0;
     private int _blocksExplodedCount = 0;
+    private int _diamondCount = 0;
 
     private bool _isVisible = true;
 
@@ -52,6 +54,11 @@ public class MonitorController : MonoBehaviour
         _blocksExplodedCount += n;
     }
 
+    public void OnDiamondMined()
+    {
+        _diamondCount++;
+    }
+
     public void UpdateAllText()
     {
         if (_isVisible)
@@ -66,7 +73,8 @@ public class MonitorController : MonoBehaviour
 
             chunkCountText.text = chunkManager.LoadedChunkCount.ToString();
 
-            memoryUsedText.text = System.String.Format("{0:n0}", System.GC.GetTotalMemory(false) / 1000000.0f);
+            memoryUsedText.text = System.String.Format("{0:n0}", System.GC.GetTotalMemory(false) / 1000000.0f) + " MB";
+            diamondText.text = _diamondCount.ToString();
         }
     }
 
