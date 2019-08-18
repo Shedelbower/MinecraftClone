@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
@@ -10,6 +11,7 @@ public class PlayerController : MonoBehaviour
     public Transform body;
     public Transform feet;
     public AudioSource stepAudioSource;
+    public AudioClip teleportClip;
     public GameObject canvas;
     [Range(0.0f, 100f)] public float baseSpeed = 10f;
     [Range(0.0f, 100f)] public float jumpPower = 3f;
@@ -32,6 +34,8 @@ public class PlayerController : MonoBehaviour
     private Vector3Int _prevPosition;
     private Vector3Int _currPosition;
     private BlockType _prevType;
+
+    private Text[] _textComponents;
 
     private bool _isJumping = false;
     private float _jumpTimer = 0.0f;
@@ -56,6 +60,8 @@ public class PlayerController : MonoBehaviour
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
+        _textComponents = this.canvas.GetComponentsInChildren<Text>();
+
         //initialSkyColor = Camera.main.backgroundColor;
         initialSkyColor = RenderSettings.fogColor;
 
@@ -71,10 +77,10 @@ public class PlayerController : MonoBehaviour
         rotY = rot.y;
         rotX = rot.x;
 
-        PlacePlayerOnSurface();
+        PlacePlayerOnSurface(false);
     }
 
-    void PlacePlayerOnSurface()
+    void PlacePlayerOnSurface(bool playAudio)
     {
         Vector3 pos = transform.position;
         pos.y = 60;
@@ -100,6 +106,11 @@ public class PlayerController : MonoBehaviour
         }
 
         transform.position += Vector3.up;
+
+        if (playAudio)
+        {
+            AudioSource.PlayClipAtPoint(this.teleportClip, this.transform.position);
+        }
     }
 
     void Update()
@@ -257,7 +268,7 @@ public class PlayerController : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.R))
         {
-            PlacePlayerOnSurface();
+            PlacePlayerOnSurface(true);
         }
     }
 
@@ -359,7 +370,10 @@ public class PlayerController : MonoBehaviour
 
     private void ToggleUI()
     {
-        canvas.SetActive(!canvas.activeSelf);
+        foreach(Text text in _textComponents)
+        {
+            text.gameObject.SetActive(!text.gameObject.activeSelf);
+        }
     }
 
     private void PlaceBlock(string blockTypeName)

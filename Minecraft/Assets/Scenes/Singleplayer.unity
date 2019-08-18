@@ -2325,6 +2325,7 @@ MonoBehaviour:
   body: {fileID: 1242095299}
   feet: {fileID: 2051302010}
   stepAudioSource: {fileID: 2051302011}
+  teleportClip: {fileID: 8300000, guid: c4c78f58297d44b8c88ef361c9e36fe7, type: 3}
   canvas: {fileID: 1958378594}
   baseSpeed: 7.5
   jumpPower: 10
