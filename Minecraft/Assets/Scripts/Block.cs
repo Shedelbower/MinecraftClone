@@ -39,7 +39,7 @@ public class Block
         return this.type == null || this.type.isTransparent;
     }
 
-    public Mesh GenerateMesh(bool[] faceIsVisible, AtlasReader atlasReader)
+    public MeshData GenerateMesh(bool[] faceIsVisible, AtlasReader atlasReader)
     {
         if (this.type.isBillboard)
         {
@@ -50,7 +50,7 @@ public class Block
         }
     }
 
-    public Mesh GenerateBillboardFaces(AtlasReader atlasReader)
+    public MeshData GenerateBillboardFaces(AtlasReader atlasReader)
     {
         Vector3[] baseVertices =
         {
@@ -103,16 +103,18 @@ public class Block
         };
         
 
-        Mesh mesh = new Mesh();
-        mesh.SetVertices(vertices);
-        mesh.SetNormals(normals);
-        mesh.SetUVs(0, uvs);
-        mesh.SetTriangles(triangles, 0);
+        // Mesh mesh = new Mesh();
+        // mesh.SetVertices(vertices);
+        // mesh.SetNormals(normals);
+        // mesh.SetUVs(0, uvs);
+        // mesh.SetTriangles(triangles, 0);
 
-        return mesh;
+        MeshData data = new MeshData(vertices,normals,uvs,triangles);
+
+        return data;
     }
 
-    public Mesh GenerateCubeFaces(bool[] faceIsVisible, AtlasReader atlasReader)
+    public MeshData GenerateCubeFaces(bool[] faceIsVisible, AtlasReader atlasReader)
     {
         List<List<Vector3>> vertexLists = new List<List<Vector3>>();
         List<List<Vector3>> normalLists = new List<List<Vector3>>();
@@ -169,13 +171,15 @@ public class Block
             allTriangles.AddRange(triangleLists[i]);
         }
 
-        Mesh mesh = new Mesh();
-        mesh.SetVertices(allVertices);
-        mesh.SetNormals(allNormals);
-        mesh.SetUVs(0, allUVs);
-        mesh.SetTriangles(allTriangles.ToArray(), 0);
+        // Mesh mesh = new Mesh();
+        // mesh.SetVertices(allVertices);
+        // mesh.SetNormals(allNormals);
+        // mesh.SetUVs(0, allUVs);
+        // mesh.SetTriangles(allTriangles.ToArray(), 0);
 
-        return mesh;
+        MeshData data = new MeshData(allVertices, allNormals, allUVs, allTriangles.ToArray());
+
+        return data;
     }
 
     /*------------------------ STATIC METHODS ------------------------*/

@@ -205,10 +205,8 @@ public class WorldChunk : MonoBehaviour
 
     public Mesh BuildOpaqueMesh(bool[,,] isExternalBlock)
     {
-        //bool[,,] isExternalBlock = GetExternalBlockMatrix();
 
-        List<Mesh> meshes = new List<Mesh>();
-        List<Matrix4x4> translations = new List<Matrix4x4>();
+        List<MeshData> meshes = new List<MeshData>();
 
         for (int i = 0; i < _size.x; i++)
         {
@@ -222,10 +220,10 @@ public class WorldChunk : MonoBehaviour
                     {
                         bool[] visibility = GetVisibility(i,j,k);
                         
-                        Mesh mesh = block.GenerateMesh(visibility, _atlasReader);
+                        MeshData mesh = block.GenerateMesh(visibility, _atlasReader);
+                        mesh.TransformVertices(Matrix4x4.Translate(new Vector3(i, j, k)));
                         meshes.Add(mesh);
 
-                        translations.Add(Matrix4x4.Translate(new Vector3(i, j, k)));
                     }
                 }
             }
@@ -257,19 +255,8 @@ public class WorldChunk : MonoBehaviour
         mr = mr == null ? go.AddComponent<MeshRenderer>() : mr;
         mc = mc == null ? go.AddComponent<MeshCollider>() : mc;
 
-        //Mesh final = new Mesh();
-        Mesh final = mf.sharedMesh ?? new Mesh();
-        final.Clear();
-        CombineInstance[] combine = new CombineInstance[meshes.Count];
-
-        for (int i = 0; i < combine.Length; i++)
-        {
-            combine[i].mesh = meshes[i];
-            combine[i].transform = translations[i];
-        }
-
-        final.CombineMeshes(combine, true);
-
+        mf.sharedMesh = null;
+        Mesh final = MeshData.Combine(meshes);
         
 
         mf.sharedMesh = final;
@@ -285,8 +272,7 @@ public class WorldChunk : MonoBehaviour
         // TODO: Store this from other build
         //bool[,,] isExternalBlock = GetExternalBlockMatrix();
 
-        List<Mesh> meshes = new List<Mesh>();
-        List<Matrix4x4> translations = new List<Matrix4x4>();
+        List<MeshData> meshes = new List<MeshData>();
 
         for (int i = 0; i < _size.x; i++)
         {
@@ -300,10 +286,10 @@ public class WorldChunk : MonoBehaviour
                     {
                         bool[] visibility = GetVisibility(i, j, k);
 
-                        Mesh mesh = block.GenerateMesh(visibility, _atlasReader);
+                        MeshData mesh = block.GenerateMesh(visibility, _atlasReader);
+                        mesh.TransformVertices(Matrix4x4.Translate(new Vector3(i, j, k)));
                         meshes.Add(mesh);
 
-                        translations.Add(Matrix4x4.Translate(new Vector3(i, j, k)));
                     }
                 }
             }
@@ -315,16 +301,7 @@ public class WorldChunk : MonoBehaviour
             return null;
         }
 
-        Mesh final = new Mesh();
-        CombineInstance[] combine = new CombineInstance[meshes.Count];
-
-        for (int i = 0; i < combine.Length; i++)
-        {
-            combine[i].mesh = meshes[i];
-            combine[i].transform = translations[i];
-        }
-
-        final.CombineMeshes(combine, true);
+        
 
         string childName = "Mesh (Water)";
         GameObject go = transform.Find(childName)?.gameObject;
@@ -352,6 +329,9 @@ public class WorldChunk : MonoBehaviour
         mr = mr == null ? go.AddComponent<MeshRenderer>() : mr;
         //mc = mc == null ? go.AddComponent<MeshCollider>() : mc;
 
+        mf.sharedMesh = null;
+        Mesh final = MeshData.Combine(meshes);
+
         mf.sharedMesh = final;
         mr.sharedMaterial = chunkWaterMaterial;
         mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
@@ -367,8 +347,7 @@ public class WorldChunk : MonoBehaviour
         // TODO: Store this from other build
         //bool[,,] isExternalBlock = GetExternalBlockMatrix();
 
-        List<Mesh> meshes = new List<Mesh>();
-        List<Matrix4x4> translations = new List<Matrix4x4>();
+        List<MeshData> meshes = new List<MeshData>();
 
         for (int i = 0; i < _size.x; i++)
         {
@@ -382,10 +361,10 @@ public class WorldChunk : MonoBehaviour
                     {
                         bool[] visibility = GetVisibility(i, j, k);
 
-                        Mesh mesh = block.GenerateMesh(visibility, _atlasReader);
+                        MeshData mesh = block.GenerateMesh(visibility, _atlasReader);
+                        mesh.TransformVertices(Matrix4x4.Translate(new Vector3(i, j, k)));
                         meshes.Add(mesh);
 
-                        translations.Add(Matrix4x4.Translate(new Vector3(i, j, k)));
                     }
                 }
             }
@@ -419,17 +398,8 @@ public class WorldChunk : MonoBehaviour
         mr = mr == null ? go.AddComponent<MeshRenderer>() : mr;
         mc = mc == null ? go.AddComponent<MeshCollider>() : mc;
 
-        Mesh final = mf.sharedMesh ?? new Mesh();
-        final.Clear();
-        CombineInstance[] combine = new CombineInstance[meshes.Count];
-
-        for (int i = 0; i < combine.Length; i++)
-        {
-            combine[i].mesh = meshes[i];
-            combine[i].transform = translations[i];
-        }
-
-        final.CombineMeshes(combine, true);
+        mf.sharedMesh = null;
+        Mesh final = MeshData.Combine(meshes);
 
 
         mf.sharedMesh = final;
