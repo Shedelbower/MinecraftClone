@@ -12,16 +12,20 @@ public class PlayerController : MonoBehaviour
     public Transform feet;
     public AudioSource stepAudioSource;
     public AudioClip teleportClip;
+    public AudioClip hitClip;
     public GameObject canvas;
     [Range(0.0f, 100f)] public float baseSpeed = 10f;
     [Range(0.0f, 100f)] public float jumpPower = 3f;
+    [Range(0.0f, 100f)] public float enderPearlThrowingPower = 10f;
     [Range(0.0f, 1.0f)] public float sidewaysSpeedModifier = 0.5f;
     [Range(0.0f, 2.0f)] public float waterSpeedModifier = 0.5f;
     public GameObject splashEffect;
     public GameObject explosionEffect;
     public GameObject breakEffect;
+    public GameObject teleportEffect;
 
     public GameObject tntPrefab;
+    public GameObject enderPearlPrefab;
 
     public Color waterTintColor = Color.blue;
     private Color initialSkyColor;
@@ -29,6 +33,8 @@ public class PlayerController : MonoBehaviour
 
     public new Transform camera;
 
+    private bool _shouldTeleport = false;
+    private Vector3 _teleportDestination;
     private float _speed;
 
     private Vector3Int _prevPosition;
@@ -54,15 +60,11 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
-        //QualitySettings.vSyncCount = 0;
-        //Application.targetFrameRate = 30;
-
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
         _textComponents = this.canvas.GetComponentsInChildren<Text>();
 
-        //initialSkyColor = Camera.main.backgroundColor;
         initialSkyColor = RenderSettings.fogColor;
 
         _speed = baseSpeed;
@@ -78,6 +80,29 @@ public class PlayerController : MonoBehaviour
         rotX = rot.x;
 
         PlacePlayerOnSurface(false);
+    }
+    public void BeginTeleport(Vector3 position) {
+        _shouldTeleport = true;
+        _teleportDestination = position;
+        AudioSource.PlayClipAtPoint(hitClip, this.transform.position);
+    }
+
+    private void Teleport() {
+        if (RaycastToBlock(100, true, out Vector3Int hitBlockPosition)) {
+            Teleport(hitBlockPosition);
+            Debug.Log("Teleporting...");
+        }
+        else {
+            Debug.Log("No block to teleport to :(");
+        }
+
+    }
+    private void Teleport(Vector3 position) {
+        characterController.enabled = false;
+        Vector3 destination = position + (transform.position - feet.position);
+        Debug.Log($"Teleporting {(transform.position - destination).magnitude} units.");
+        this.transform.position = position + (transform.position - feet.position);
+        GameObject effect = Instantiate(teleportEffect, this.camera.position, Quaternion.identity);        
     }
 
     void PlacePlayerOnSurface(bool playAudio)
@@ -111,6 +136,14 @@ public class PlayerController : MonoBehaviour
         {
             AudioSource.PlayClipAtPoint(this.teleportClip, this.transform.position);
         }
+    }
+
+    private void ThrowEnderPearl() {
+        GameObject go = Instantiate(enderPearlPrefab, camera.position, Quaternion.identity) as GameObject;
+        EnderPearlController pearl = go.GetComponent<EnderPearlController>();
+        Vector3 cameraDirection = camera.TransformDirection(Vector3.forward);
+        Vector3 direction = Vector3.Lerp(cameraDirection, Vector3.up, 0.1f);
+        pearl.Initialize(direction*enderPearlThrowingPower,this);
     }
 
     void Update()
@@ -179,6 +212,8 @@ public class PlayerController : MonoBehaviour
         else if (Input.GetKeyDown(KeyCode.Q))
         {
             LaunchTNT();
+        } else if (Input.GetKeyDown(KeyCode.E)) {
+            ThrowEnderPearl();
         }
 
         if (Input.GetKeyDown(KeyCode.H))
@@ -266,9 +301,21 @@ public class PlayerController : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (characterController.enabled == false) { // Re-enable character controller after having enough time to teleport
+            characterController.enabled = true;
+        }
+        if (_shouldTeleport) {
+            Teleport(_teleportDestination);
+            _shouldTeleport = false;
+            _teleportDestination = Vector3.zero;
+        }
+
         if (Input.GetKeyDown(KeyCode.R))
         {
             PlacePlayerOnSurface(true);
+        } else if (Input.GetKeyDown(KeyCode.T))
+        {
+            Teleport();
         }
     }
 

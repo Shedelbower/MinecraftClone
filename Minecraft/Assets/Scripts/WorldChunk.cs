@@ -676,10 +676,11 @@ public class WorldChunk : MonoBehaviour
             Vector3Int bottomPos = worldPos;
             bottomPos.y--;
             Block bottomBlock = chunkManager.GetBlockAtPosition(bottomPos);
-            if (bottomBlock == null || bottomBlock.type.name == "Air")
+            if (bottomBlock == null || bottomBlock.type.isTransparent)
             {
-                chunkManager.ModifyBlock(bottomPos, blockToUpdate);
+                // chunkManager.ModifyBlock(bottomPos, blockToUpdate);
                 chunkManager.ModifyBlock(worldPos, null);
+                chunkManager.entityManager.CreateBlockEntity(worldPos,blockToUpdate.type);
                 return true;
             }
         }
