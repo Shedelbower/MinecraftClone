@@ -6,7 +6,7 @@ public class ChunkManager : MonoBehaviour
 {
 
     private static readonly float CHUNK_UPDATE_INTERVAL = 0.5f;
-
+    public EntityManager entityManager;
     public bool useRandomSeed = false;
     public int seed;
 
