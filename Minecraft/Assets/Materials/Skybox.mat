@@ -74,9 +74,9 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _SunAlpha: 773.35
-    - _SunAltitude: 82.4
+    - _SunAltitude: 0
     - _SunAzimuth: 20.94
-    - _SunBeta: 0.9
+    - _SunBeta: 0
     - _SunIntensity: 4.37
     - _UVSec: 0
     - _ZWrite: 1
