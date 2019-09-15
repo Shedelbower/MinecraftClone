@@ -29,7 +29,9 @@ public class EnderPearlController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other) {
         if (other.tag != "Player") {
-            _playerController.BeginTeleport(this.transform.position + Vector3.up*0.25f);
+            // Offset the player so they are ideally not half inside the block they teleport to.
+            Vector3 positionOffset = _rigidbody.velocity.normalized * -1.0f;
+            _playerController.BeginTeleport(this.transform.position + positionOffset);
             GameObject.Destroy(this.gameObject);
         }
     }
