@@ -94,46 +94,85 @@ public class WorldChunk : MonoBehaviour
         return type;
     }
 
+    public static float RidgeNoise(float x, float y) {
+        return Mathf.Abs(Mathf.PerlinNoise(x,y)-0.5f) * 2.0f;
+    }
+
     public static BlockType GetBlockType(int x, int y, int z, int seed)
     {
 
-        //Vector2Int offset = _seedOffset;
         Random.State prevState = Random.state;
         UnityEngine.Random.InitState(seed);
         Vector2Int offset = new Vector2Int(Random.Range(-100, 100), Random.Range(-100, 100));
         Random.state = prevState;
 
-        int noise = Mathf.FloorToInt(Mathf.PerlinNoise(1 * (x) / (float)32 + offset.x, 1 * (z) / (float)32 + offset.y) * 25);
-        noise += 30;
+        float ox = 1 * (x) / (float)32 + offset.x;
+        float oz = 1 * (z) / (float)32 + offset.y;
+
+        int baseNoise = Mathf.FloorToInt(Mathf.PerlinNoise(ox, oz) * 25);
+        baseNoise += 30;
 
         BlockType type = null;
 
         int waterLevel = 35;
+        int ironDepth = 5;
+
+        float ridgeMask = Mathf.PerlinNoise((x + offset.x) / 60f, (z + offset.y)/60f);
+
+        int noise = baseNoise;
+
+        bool isLake = baseNoise <= waterLevel;
+
+        bool isRavine = false;
+        bool isInnerRavine = false;
+        if (ridgeMask < 0.3f) {
+            float ridgeNoise = RidgeNoise(x / 20f, z/20f);
+            isInnerRavine = ridgeNoise < 0.1f && baseNoise > waterLevel + 1;
+            isRavine = ridgeNoise < 0.15f && baseNoise > waterLevel + 1;
+
+            if (isInnerRavine) {
+                noise -= 20;
+            } else if (isRavine) {
+                noise -= Mathf.RoundToInt(20 * (1-Mathf.InverseLerp(0.1f,0.15f,ridgeNoise)));
+            }
+        }
 
         if (y <= 0)
         {
             type = BlockType.GetBlockType("Bedrock");
         }
-        else if (y < noise - 3)
+        else if (y < baseNoise - 3 || (isRavine && y < baseNoise && y < noise))
         {
-            type = BlockType.GetBlockType("Stone");
+            if (y < noise) {
+                type = BlockType.GetBlockType("Stone");
 
-            if (y < noise - 35 && Random.value < 0.001f)
-            {
-                type = BlockType.GetBlockType("Diamond Ore");
-            }
-
-            float p1 = Mathf.PerlinNoise(x / (float)2 + offset.x + 100, z / (float)2 + offset.y + 100);
-
-            if (y < noise - 10 && p1 > 0.7f)
-            {
-                float p2 = Mathf.PerlinNoise(y / (float)3, 0);
-                if (p2 > 0.7f)
+                if (y < baseNoise - 35 && Random.value < 0.001f)
                 {
-                    type = BlockType.GetBlockType("Iron Ore");
+                    type = BlockType.GetBlockType("Diamond Ore");
                 }
-                
+
+                if (y <= baseNoise - ironDepth)
+                {
+                    float p1 = Mathf.PerlinNoise((x+offset.x) / 4f + 100, (z+offset.y) / 4f + 100);
+                    if (p1 > 0.7f) {
+                        float p2 = Mathf.PerlinNoise(y / 4f, 0);
+                        if (p2 > 0.7f)
+                        {
+                            type = BlockType.GetBlockType("Iron Ore");
+                        }
+                    }
+                }
             }
+
+            
+        }
+        else if (y >= noise - 5 && y <= noise && isLake && isRavine == false)
+        {
+            type = BlockType.GetBlockType("Sand");
+        }
+        else if (isLake && y <= waterLevel && isRavine == false)
+        {
+            type = BlockType.GetBlockType("Water");
         }
         else if (y < noise)
         {
@@ -143,18 +182,8 @@ public class WorldChunk : MonoBehaviour
         {
             type = BlockType.GetBlockType("Grass");
         }
-        else if (y == noise && y <= waterLevel)
-        {
-            type = BlockType.GetBlockType("Sand");
-        }
-        else if (y <= waterLevel)
-        {
-            type = BlockType.GetBlockType("Water");
-        }
         else if (y == noise + 1 && y > waterLevel + 1)
         {
-            //UnityEngine.Random.State prevState = Random.state;
-            //Random.InitState(noise + x^noise + y^z + z^y);
 
             float p = Random.value;
             if (p < 0.1f)
@@ -185,12 +214,62 @@ public class WorldChunk : MonoBehaviour
                 }
 
             }
-
-            //Random.state = prevState;
         }
 
         return type;
     }
+
+    // public static float PerlinNoise3D(float x, float y, float z) {
+    //     return (Mathf.PerlinNoise(x,z) + Mathf.PerlinNoise(0f,y)) - 1.0f;
+    // }
+
+    // public static float InverseLerpUnclamped(float a, float b, float value) {
+    //     return (value-a)/(b-a);
+    // }
+
+    // public static BlockType GetBlockType(int x, int y, int z, int seed)
+    // {
+
+    //     Random.State prevState = Random.state;
+    //     UnityEngine.Random.InitState(seed);
+    //     Vector3Int offset = new Vector3Int(Random.Range(-100, 100), Random.Range(-100, 100),Random.Range(-100, 100));
+    //     Random.state = prevState;
+
+    //     // Constants
+    //     int bedrockLevel = 0;
+    //     int seaLevel = 60;
+    //     int hillLevel = 70;
+
+    //     float horizontalScale = 1/32f;
+    //     float verticalScale = 1/16f;
+
+    //     float noise = PerlinNoise3D((x+offset.x)*horizontalScale,(y+offset.y)*verticalScale,(z+offset.z)*horizontalScale);
+    //     noise *= 5;
+
+    //     float t = InverseLerpUnclamped((float)seaLevel,(float)hillLevel,(float)y);
+    //     float v = Mathf.Lerp(-1f,1f,t) * 2f;
+    //     // float t = Mathf.InverseLerp((float)seaLevel, (float)hillLevel,(float)y);
+
+    //     noise -= v;
+
+    //     noise *= 0.25f;
+    //     if (noise > 0.98) {
+    //         return BlockType.GetBlockType("Bedrock");
+    //     } else if (noise > 0.2)
+    //     {
+    //         return BlockType.GetBlockType("Stone");
+    //     } else if (noise > 0.1)
+    //     {
+    //         return BlockType.GetBlockType("Dirt");
+    //     } else if (noise > 0)
+    //     {
+    //         return BlockType.GetBlockType("Grass");
+    //     } else {
+    //         return null;
+    //     }
+
+
+    // }
 
     public void BuildMesh()
     {
