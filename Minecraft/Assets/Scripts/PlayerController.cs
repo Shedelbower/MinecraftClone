@@ -7,12 +7,16 @@ public class PlayerController : MonoBehaviour
 {
     public CharacterController characterController;
     public MonitorController monitorController;
+    public HotbarController hotbarController;
     public ChunkManager chunkManager;
     public Transform body;
     public Transform feet;
     public AudioSource stepAudioSource;
     public AudioClip teleportClip;
     public AudioClip hitClip;
+    public AudioClip fallLandSmallClip;
+    public AudioClip fallLandLargeClip;
+    public AudioClip fallingClip;
     public GameObject canvas;
     [Range(0.0f, 100f)] public float baseSpeed = 10f;
     [Range(0.0f, 100f)] public float jumpPower = 3f;
@@ -23,6 +27,7 @@ public class PlayerController : MonoBehaviour
     public GameObject explosionEffect;
     public GameObject breakEffect;
     public GameObject teleportEffect;
+    public GameObject growthEffect;
 
     public GameObject tntPrefab;
     public GameObject enderPearlPrefab;
@@ -46,6 +51,7 @@ public class PlayerController : MonoBehaviour
     private bool _isJumping = false;
     private float _jumpTimer = 0.0f;
     private float _jumpYVelocity = 0.0f;
+    private float _terminalVelocity = 30.0f;
     [SerializeField] private float _jumpDuration = 2.0f;
 
     [SerializeField] private bool _isInWater = false;
@@ -57,6 +63,10 @@ public class PlayerController : MonoBehaviour
 
     private float rotY = 0.0f; // rotation around the up/y axis
     private float rotX = 0.0f; // rotation around the right/x axis
+
+    private bool _prevIsGrounded = true;
+
+    private float _movementSincePrevStep = 0.0f;
 
     void Start()
     {
@@ -79,7 +89,7 @@ public class PlayerController : MonoBehaviour
         rotY = rot.y;
         rotX = rot.x;
 
-        PlacePlayerOnSurface(false);
+        // PlacePlayerOnSurface(false);
     }
     public void BeginTeleport(Vector3 position) {
         _shouldTeleport = true;
@@ -148,6 +158,8 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        HandleHotbarSelection();
+
         _currPosition = new Vector3Int((int)transform.position.x, (int)transform.position.y, (int)transform.position.z);
 
         if (_currPosition != _prevPosition)
@@ -188,6 +200,13 @@ public class PlayerController : MonoBehaviour
 
         }
 
+        if (_prevIsGrounded != characterController.isGrounded) {
+            _prevIsGrounded = characterController.isGrounded;
+            if (characterController.isGrounded == false) {
+                _isJumping = true;
+                _jumpTimer = 0.0f;
+            }
+        }
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
@@ -198,7 +217,7 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetMouseButtonDown(1))
         {
-            PlaceSameBlock();
+            HandleRightMouseClick();
         }
         else if (Input.GetMouseButtonDown(0))
         {
@@ -221,11 +240,46 @@ public class PlayerController : MonoBehaviour
             this.ToggleUI();
         }
 
-
-        if (characterController.isGrounded || _isInWater)
+        if (_isInWater)
         {
-            _isJumping = false;
             _jumpYVelocity /= 2.0f;
+        }
+
+        if (_isJumping) {
+            _jumpTimer += Time.deltaTime;
+        }
+
+        if (characterController.isGrounded)
+        {
+            if (_isJumping) {
+                _isJumping = false;
+                Debug.Log(_jumpYVelocity);
+                if (_jumpYVelocity < -15.0f) {
+                    AudioClip clip = _jumpYVelocity < -29f ? fallLandLargeClip : fallLandSmallClip;
+                    AudioSource.PlayClipAtPoint(clip, this.feet.position, 1.0f);
+                }
+
+                stepAudioSource.volume = 1.0f;
+                if (stepAudioSource.isPlaying && stepAudioSource.clip != null) {
+                    // Stop the falling air sound
+                    stepAudioSource.Stop();
+                }
+            }
+            _jumpYVelocity = 0.0f;
+        }
+
+        if (_isInWater) {
+            _jumpTimer = 0.0f;
+        }
+
+        if (_isJumping) {
+            if (_jumpTimer > 0.8f && stepAudioSource.isPlaying == false) {
+                stepAudioSource.clip = fallingClip;
+                stepAudioSource.Play();
+            }
+            if (stepAudioSource.clip != null) {
+                stepAudioSource.volume = Mathf.InverseLerp(0.8f, 2.0f, _jumpTimer);
+            }
         }
 
         if (Input.GetKey(KeyCode.Space) && _isInWater == false && characterController.isGrounded)
@@ -254,10 +308,6 @@ public class PlayerController : MonoBehaviour
             movement += this.transform.right * _speed * sidewaysSpeedModifier;
         }
 
-        if (movement.sqrMagnitude > 0.001f)
-        {
-            PlayStepAudio();
-        }
 
         movement = camera.rotation * movement;
 
@@ -266,9 +316,11 @@ public class PlayerController : MonoBehaviour
         movement.y = 0.0f;
         movement = movement.normalized * mag;
 
+        _movementSincePrevStep += mag * Time.deltaTime;
 
         float gravity = -30f;
         _jumpYVelocity += gravity * Time.deltaTime;
+        _jumpYVelocity = Mathf.Clamp(_jumpYVelocity, -_terminalVelocity, float.MaxValue);
 
         Vector3 jumpVelocity = Vector3.up * _jumpYVelocity;
         //if (_isInWater)
@@ -279,7 +331,7 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKey(KeyCode.Space) && _isInWater)
         {
-            movement += Vector3.up * 2f;
+            movement += Vector3.up * 4f;
             //movement -= Vector3.up * gravity * Time.deltaTime; // Remove effects of gravity
         } else if (_isJumping == false && characterController.isGrounded == false)
         {
@@ -294,7 +346,7 @@ public class PlayerController : MonoBehaviour
             DoMouseRotation();
         }
         
-
+        PlayStepAudio();
 
         
     }
@@ -321,8 +373,8 @@ public class PlayerController : MonoBehaviour
 
     private void PlayStepAudio()
     {
-        if (stepAudioSource.isPlaying == false)
-        {
+        if (_movementSincePrevStep > 2f) {
+            _movementSincePrevStep = 0.0f;
             Vector3Int positionBeneathFeet = _currPosition + Vector3Int.down;
             Block blockBeneathFeet = chunkManager.GetBlockAtPosition(positionBeneathFeet);
             if (blockBeneathFeet != null && blockBeneathFeet.type != null)
@@ -331,8 +383,9 @@ public class PlayerController : MonoBehaviour
                 if (stepClips != null && stepClips.Length > 0)
                 {
                     AudioClip clip = stepClips[Random.Range(0, stepClips.Length - 1)];
-                    stepAudioSource.clip = clip;
-                    stepAudioSource.Play();
+                    // stepAudioSource.clip = clip;
+                    // stepAudioSource.Play();
+                    AudioSource.PlayClipAtPoint(clip,feet.position);
                 }
                 
             }
@@ -558,25 +611,136 @@ public class PlayerController : MonoBehaviour
     }
 
 
-    //private void OnTriggerEnter(Collider other)
-    //{
-    //    if (other.CompareTag("Water"))
-    //    {
-    //        _waterColliders.Add(other);
-    //        _speed = baseSpeed * waterSpeedModifier;
-    //    }
-    //}
+    /////////////////////// Hotbar ///////////////////////
 
-    //private void OnTriggerExit(Collider other)
-    //{
-    //    if (other.CompareTag("Water"))
-    //    {
-    //        _waterColliders.Remove(other);
-    //        if (_waterColliders.Count == 0)
-    //        {
-    //            _speed = baseSpeed; // Left all water, return to normal speed
-    //        }
-       
-    //    }
-    //}
+    private void HandleHotbarSelection() {
+        KeyCode[] keycodes = new KeyCode[] {
+            KeyCode.Alpha1,
+            KeyCode.Alpha2,
+            KeyCode.Alpha3,
+            KeyCode.Alpha4,
+            KeyCode.Alpha5,
+            KeyCode.Alpha6,
+            KeyCode.Alpha7,
+            KeyCode.Alpha8,
+            KeyCode.Alpha9
+        };
+        for (int i = 0; i < keycodes.Length; i++) {
+            if (Input.GetKeyDown(keycodes[i])) {
+                hotbarController.SelectItem(i);
+                break;
+            }
+        }
+    }
+
+    private void HandleRightMouseClick() {
+        switch(hotbarController.SeletedItem.Type) {
+            case SlotItem.SlotItemType.EnderPearl:
+                ThrowEnderPearl();
+                break;
+            case SlotItem.SlotItemType.TNT:
+                LaunchTNT();
+                break;
+            case SlotItem.SlotItemType.EndermanHead:
+                Teleport();
+                break;
+            case SlotItem.SlotItemType.BoneMeal:
+                UseBoneMeal();
+                break;
+            case SlotItem.SlotItemType.Stone:
+                PlaceBlock("Stone");
+                break;
+            case SlotItem.SlotItemType.Sand:
+                PlaceBlock("Sand");
+                break;
+            case SlotItem.SlotItemType.Gravel:
+                PlaceBlock("Gravel");
+                break;
+            case SlotItem.SlotItemType.Bedrock:
+                PlaceBlock("Bedrock");
+                break;
+            case SlotItem.SlotItemType.Dirt:
+                PlaceBlock("Dirt");
+                break;
+            case SlotItem.SlotItemType.CopyBlock:
+                PlaceSameBlock();
+                break;
+            default:
+                PlaceSameBlock();
+                break;
+        }
+    }
+
+    private void UseBoneMeal() {
+        Vector3Int blockPos;
+        if (RaycastToBlock(10.0f, false, out blockPos))
+        {
+            Block hitBlock = chunkManager.GetBlockAtPosition(blockPos);
+            bool isGrassBlock = hitBlock != null && hitBlock.type != null && hitBlock.type.name == "Grass";
+            if (isGrassBlock == false) {
+                return;
+            }
+
+            List<Vector3Int> positions = GetBlockPositionsWithinRadius(blockPos, 5);
+
+            List<Vector3Int> replacementPositions = new List<Vector3Int>();
+            List<Block> replacementBlocks = new List<Block>();
+
+            foreach(var pos in positions) {
+                Block block = chunkManager.GetBlockAtPosition(pos);
+                bool isAirBlock = block == null || block.type == null;
+                if (isAirBlock) {
+                    Block blockBeneath = chunkManager.GetBlockAtPosition(pos + Vector3Int.down);
+                    if (blockBeneath != null && blockBeneath.type.name == "Grass" && Random.value > 0.5f) {
+                        string[] plantBlockTypeNames = new string[] {
+                            "Daisy",
+                            "Orange Tulip",
+                            "Pink Tulip",
+                            "Red Tulip",
+                            "Yellow Flower",
+                            "Tall Grass",
+                            "Tall Grass",
+                            "Tall Grass",
+                            "Tall Grass"
+                        };
+                        string randomChoice = plantBlockTypeNames[Random.Range(0,plantBlockTypeNames.Length)];
+                        Block plantBlock = new Block(randomChoice);
+                        replacementBlocks.Add(plantBlock);
+                        replacementPositions.Add(pos);
+                    }
+                }
+            }
+
+            chunkManager.ModifyBlocks(replacementPositions, replacementBlocks);
+
+            if (replacementBlocks.Count > 0) {
+                GameObject effect = Instantiate(growthEffect, null) as GameObject;
+                effect.transform.position = blockPos;
+            }
+        }
+    }
+
+    private List<Vector3Int> GetBlockPositionsWithinRadius(Vector3Int center, int radius) {
+        List<Vector3Int> positions = new List<Vector3Int>();
+
+        for (int x = -radius; x <= radius; x++)
+        {
+            for (int y = -radius; y <= radius; y++)
+            {
+                for (int z = -radius; z <= radius; z++)
+                {
+                    float dist = Mathf.Sqrt(x * x + y * y + z * z);
+                    if (dist <= radius)
+                    {
+                        Vector3Int pos = new Vector3Int(x, y, z) + center;
+                        positions.Add(pos);
+                    }
+                }
+            }
+        }
+        return positions;
+    }
+
+
+
 }
