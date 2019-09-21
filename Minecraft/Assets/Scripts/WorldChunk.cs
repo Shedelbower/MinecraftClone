@@ -149,14 +149,27 @@ public class WorldChunk : MonoBehaviour
         {
             if (y < noise)
             {
-                type = BlockType.GetBlockType("Stone");
+                type = null;
 
                 if (y < baseNoise - 35 && Random.value < 0.001f)
                 {
                     type = BlockType.GetBlockType("Diamond Ore");
                 }
 
-                if (y <= baseNoise - ironDepth)
+                if (type == null)
+                {
+                    float p1 = Mathf.PerlinNoise((x + offset.x) / 6f + 0.5f, (z + offset.y) / 6f + 0.5f);
+                    if (p1 > 0.6f)
+                    {
+                        float p2 = Mathf.PerlinNoise(y / 6f, 0);
+                        if (p2 > 0.6f)
+                        {
+                            type = BlockType.GetBlockType("Gravel");
+                        }
+                    }
+                }
+
+                if (type == null && y <= baseNoise - ironDepth)
                 {
                     float p1 = Mathf.PerlinNoise((x + offset.x) / 4f + 100, (z + offset.y) / 4f + 100);
                     if (p1 > 0.7f)
@@ -168,6 +181,8 @@ public class WorldChunk : MonoBehaviour
                         }
                     }
                 }
+
+                type = type ?? BlockType.GetBlockType("Stone");
             }
 
 
