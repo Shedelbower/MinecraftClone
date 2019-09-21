@@ -431,6 +431,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   entityManager: {fileID: 1293213832}
+  noiseManager: {fileID: 0}
   useRandomSeed: 1
   seed: 2
   player: {fileID: 1253456488}
@@ -1904,7 +1905,7 @@ PrefabInstance:
         type: 3}
       propertyPath: item
       value: 
-      objectReference: {fileID: 11400000, guid: fd7f1d521137845c3a7b33580f56d257,
+      objectReference: {fileID: 11400000, guid: 242eaa0f5f7ce40e4bef76c5c5559601,
         type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 64d2317771ee9466a9ee2585f376d5e1, type: 3}
@@ -2274,7 +2275,7 @@ PrefabInstance:
         type: 3}
       propertyPath: item
       value: 
-      objectReference: {fileID: 11400000, guid: 242eaa0f5f7ce40e4bef76c5c5559601,
+      objectReference: {fileID: 11400000, guid: bf28e49375c0647f09d22d35e61c2247,
         type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 64d2317771ee9466a9ee2585f376d5e1, type: 3}
@@ -5251,7 +5252,7 @@ PrefabInstance:
         type: 3}
       propertyPath: item
       value: 
-      objectReference: {fileID: 11400000, guid: 5b5d88a5854ee4f889586507508a9c13,
+      objectReference: {fileID: 11400000, guid: dea1d756bc90b4fe39c9a5416702b8a6,
         type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 64d2317771ee9466a9ee2585f376d5e1, type: 3}
