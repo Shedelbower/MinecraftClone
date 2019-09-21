@@ -15,6 +15,12 @@ public class WorldChunk : MonoBehaviour
         get;
     }
 
+    public LoadState State
+    {
+        get;
+        private set;
+    }
+
     public bool IsLoaded
     {
         get;
@@ -27,9 +33,18 @@ public class WorldChunk : MonoBehaviour
         private set;
     }
 
+    public enum LoadState
+    {
+        Unloaded,
+        LoadedFirstPass,
+        LoadedSecondPass,
+        Rendered
+    }
+
 
     public bool highlight = true;
     public ChunkManager chunkManager;
+    public NoiseManager noiseManager;
 
     public Texture2D blockAtlas;
     public Material chunkOpaqueMaterial;
@@ -49,42 +64,55 @@ public class WorldChunk : MonoBehaviour
         _minCorner = minCorner;
         _seed = seed;
 
-        //UnityEngine.Random.InitState(_seed);
-        //_seedOffset = new Vector2Int(Random.Range(int.MinValue, int.MaxValue), Random.Range(int.MinValue, int.MaxValue));
-
         this.transform.position = minCorner;
         this.gameObject.isStatic = true;
 
-        _blocks = new Block[size.x, size.y, size.z];
-
         _atlasReader = new AtlasReader(blockAtlas, 8);
 
-        for (int x = 0; x < _size.x; x++)
-        {
-            for (int z = 0; z < _size.z; z++)
-            {
-                for (int y = 0; y < _size.y; y++)
-                {
-                    BlockType type = GetBlockType(x + _minCorner.x, y + _minCorner.y, z + _minCorner.z, _seed);
+        _blocks = new Block[_size.x, _size.y, _size.z];
 
-                    if (type != null)
-                    {
-                        _blocks[x, y, z] = new Block(type);
-                    }
+        this.State = LoadState.Unloaded;
+    }
+
+    public void LoadFirstPass()
+    {
+        this.State = LoadState.LoadedFirstPass;
+
+        
+        int[,,] blockTypeIndices = noiseManager.GenerateChunkFirstPass(_minCorner, _size);
+
+        for (int i = 0; i < _blocks.GetLength(0); i++)
+        {
+            for (int j = 0; j < _blocks.GetLength(1); j++)
+            {
+                for (int k = 0; k < _blocks.GetLength(2); k++)
+                {
+                    _blocks[i, j, k] = new Block(blockTypeIndices[i, j, k]);
                 }
             }
         }
 
-        Debug.Log("Initialized Blocks in Chunk");
+        Debug.Log("Loaded 1st Pass");
     }
 
-    public static BlockType GetBlockType(Vector3 pos, int seed)
+    public void LoadSecondPass()
     {
-        int x = Mathf.RoundToInt(pos.x);
-        int y = Mathf.RoundToInt(pos.y);
-        int z = Mathf.RoundToInt(pos.z);
-        return GetBlockType(x,y,z,seed);
+        this.State = LoadState.LoadedSecondPass;
+
+        // TODO: add trees and stuff
+
+        Debug.Log("Loaded 2nd Pass");
     }
+
+    
+
+    //public static BlockType GetBlockType(Vector3 pos, int seed)
+    //{
+    //    int x = Mathf.RoundToInt(pos.x);
+    //    int y = Mathf.RoundToInt(pos.y);
+    //    int z = Mathf.RoundToInt(pos.z);
+    //    return GetBlockType(x,y,z,seed);
+    //}
 
     public BlockType ReadBlockType(Vector3Int worldPos)
     {
@@ -94,130 +122,131 @@ public class WorldChunk : MonoBehaviour
         return type;
     }
 
-    public static float RidgeNoise(float x, float y) {
-        return Mathf.Abs(Mathf.PerlinNoise(x,y)-0.5f) * 2.0f;
-    }
 
-    public static BlockType GetBlockType(int x, int y, int z, int seed)
-    {
+    //public static float RidgeNoise(float x, float y) {
+    //    return Mathf.Abs(Mathf.PerlinNoise(x,y)-0.5f) * 2.0f;
+    //}
 
-        Random.State prevState = Random.state;
-        UnityEngine.Random.InitState(seed);
-        Vector2Int offset = new Vector2Int(Random.Range(-100, 100), Random.Range(-100, 100));
-        Random.state = prevState;
+    //public static BlockType GetBlockType(int x, int y, int z, int seed)
+    //{
 
-        float ox = 1 * (x) / (float)32 + offset.x;
-        float oz = 1 * (z) / (float)32 + offset.y;
+    //    Random.State prevState = Random.state;
+    //    UnityEngine.Random.InitState(seed);
+    //    Vector2Int offset = new Vector2Int(Random.Range(-100, 100), Random.Range(-100, 100));
+    //    Random.state = prevState;
 
-        int baseNoise = Mathf.FloorToInt(Mathf.PerlinNoise(ox, oz) * 25);
-        baseNoise += 30;
+    //    float ox = 1 * (x) / (float)32 + offset.x;
+    //    float oz = 1 * (z) / (float)32 + offset.y;
 
-        BlockType type = null;
+    //    int baseNoise = Mathf.FloorToInt(Mathf.PerlinNoise(ox, oz) * 25);
+    //    baseNoise += 30;
 
-        int waterLevel = 35;
-        int ironDepth = 5;
+    //    BlockType type = null;
 
-        float ridgeMask = Mathf.PerlinNoise((x + offset.x) / 60f, (z + offset.y)/60f);
+    //    int waterLevel = 35;
+    //    int ironDepth = 5;
 
-        int noise = baseNoise;
+    //    float ridgeMask = Mathf.PerlinNoise((x + offset.x) / 60f, (z + offset.y)/60f);
 
-        bool isLake = baseNoise <= waterLevel;
+    //    int noise = baseNoise;
 
-        bool isRavine = false;
-        bool isInnerRavine = false;
-        if (ridgeMask < 0.3f) {
-            float ridgeNoise = RidgeNoise(x / 20f, z/20f);
-            isInnerRavine = ridgeNoise < 0.1f && baseNoise > waterLevel + 1;
-            isRavine = ridgeNoise < 0.15f && baseNoise > waterLevel + 1;
+    //    bool isLake = baseNoise <= waterLevel;
 
-            if (isInnerRavine) {
-                noise -= 20;
-            } else if (isRavine) {
-                noise -= Mathf.RoundToInt(20 * (1-Mathf.InverseLerp(0.1f,0.15f,ridgeNoise)));
-            }
-        }
+    //    bool isRavine = false;
+    //    bool isInnerRavine = false;
+    //    if (ridgeMask < 0.3f) {
+    //        float ridgeNoise = RidgeNoise(x / 20f, z/20f);
+    //        isInnerRavine = ridgeNoise < 0.1f && baseNoise > waterLevel + 1;
+    //        isRavine = ridgeNoise < 0.15f && baseNoise > waterLevel + 1;
 
-        if (y <= 0)
-        {
-            type = BlockType.GetBlockType("Bedrock");
-        }
-        else if (y < baseNoise - 3 || (isRavine && y < baseNoise && y < noise))
-        {
-            if (y < noise) {
-                type = BlockType.GetBlockType("Stone");
+    //        if (isInnerRavine) {
+    //            noise -= 20;
+    //        } else if (isRavine) {
+    //            noise -= Mathf.RoundToInt(20 * (1-Mathf.InverseLerp(0.1f,0.15f,ridgeNoise)));
+    //        }
+    //    }
 
-                if (y < baseNoise - 35 && Random.value < 0.001f)
-                {
-                    type = BlockType.GetBlockType("Diamond Ore");
-                }
+    //    if (y <= 0)
+    //    {
+    //        type = BlockType.GetBlockType("Bedrock");
+    //    }
+    //    else if (y < baseNoise - 3 || (isRavine && y < baseNoise && y < noise))
+    //    {
+    //        if (y < noise) {
+    //            type = BlockType.GetBlockType("Stone");
 
-                if (y <= baseNoise - ironDepth)
-                {
-                    float p1 = Mathf.PerlinNoise((x+offset.x) / 4f + 100, (z+offset.y) / 4f + 100);
-                    if (p1 > 0.7f) {
-                        float p2 = Mathf.PerlinNoise(y / 4f, 0);
-                        if (p2 > 0.7f)
-                        {
-                            type = BlockType.GetBlockType("Iron Ore");
-                        }
-                    }
-                }
-            }
+    //            if (y < baseNoise - 35 && Random.value < 0.001f)
+    //            {
+    //                type = BlockType.GetBlockType("Diamond Ore");
+    //            }
+
+    //            if (y <= baseNoise - ironDepth)
+    //            {
+    //                float p1 = Mathf.PerlinNoise((x+offset.x) / 4f + 100, (z+offset.y) / 4f + 100);
+    //                if (p1 > 0.7f) {
+    //                    float p2 = Mathf.PerlinNoise(y / 4f, 0);
+    //                    if (p2 > 0.7f)
+    //                    {
+    //                        type = BlockType.GetBlockType("Iron Ore");
+    //                    }
+    //                }
+    //            }
+    //        }
 
             
-        }
-        else if (y >= noise - 5 && y <= noise && isLake && isRavine == false)
-        {
-            type = BlockType.GetBlockType("Sand");
-        }
-        else if (isLake && y <= waterLevel && isRavine == false)
-        {
-            type = BlockType.GetBlockType("Water");
-        }
-        else if (y < noise)
-        {
-            type = BlockType.GetBlockType("Dirt");
-        }
-        else if (y == noise && y > waterLevel)
-        {
-            type = BlockType.GetBlockType("Grass");
-        }
-        else if (y == noise + 1 && y > waterLevel + 1)
-        {
+    //    }
+    //    else if (y >= noise - 5 && y <= noise && isLake && isRavine == false)
+    //    {
+    //        type = BlockType.GetBlockType("Sand");
+    //    }
+    //    else if (isLake && y <= waterLevel && isRavine == false)
+    //    {
+    //        type = BlockType.GetBlockType("Water");
+    //    }
+    //    else if (y < noise)
+    //    {
+    //        type = BlockType.GetBlockType("Dirt");
+    //    }
+    //    else if (y == noise && y > waterLevel)
+    //    {
+    //        type = BlockType.GetBlockType("Grass");
+    //    }
+    //    else if (y == noise + 1 && y > waterLevel + 1)
+    //    {
 
-            float p = Random.value;
-            if (p < 0.1f)
-            {
-                type = BlockType.GetBlockType("Tall Grass");
-            } else if (p < 0.12f)
-            {
-                float p2 = Random.value;
-                if (p2 < 0.2f)
-                {
-                    type = BlockType.GetBlockType("Yellow Flower");
-                }
-                else if (p2 < 0.4f)
-                {
-                    type = BlockType.GetBlockType("Daisy");
-                }
-                else if (p2 < 0.6f)
-                {
-                    type = BlockType.GetBlockType("Red Tulip");
-                }
-                else if (p2 < 0.8f)
-                {
-                    type = BlockType.GetBlockType("Pink Tulip");
-                }
-                else if (p2 < 1.0f)
-                {
-                    type = BlockType.GetBlockType("Orange Tulip");
-                }
+    //        float p = Random.value;
+    //        if (p < 0.1f)
+    //        {
+    //            type = BlockType.GetBlockType("Tall Grass");
+    //        } else if (p < 0.12f)
+    //        {
+    //            float p2 = Random.value;
+    //            if (p2 < 0.2f)
+    //            {
+    //                type = BlockType.GetBlockType("Yellow Flower");
+    //            }
+    //            else if (p2 < 0.4f)
+    //            {
+    //                type = BlockType.GetBlockType("Daisy");
+    //            }
+    //            else if (p2 < 0.6f)
+    //            {
+    //                type = BlockType.GetBlockType("Red Tulip");
+    //            }
+    //            else if (p2 < 0.8f)
+    //            {
+    //                type = BlockType.GetBlockType("Pink Tulip");
+    //            }
+    //            else if (p2 < 1.0f)
+    //            {
+    //                type = BlockType.GetBlockType("Orange Tulip");
+    //            }
 
-            }
-        }
+    //        }
+    //    }
 
-        return type;
-    }
+    //    return type;
+    //}
 
     // public static float PerlinNoise3D(float x, float y, float z) {
     //     return (Mathf.PerlinNoise(x,z) + Mathf.PerlinNoise(0f,y)) - 1.0f;
@@ -271,8 +300,10 @@ public class WorldChunk : MonoBehaviour
 
     // }
 
-    public void BuildMesh()
+    public void Render()
     {
+        this.State = LoadState.Rendered;
+
         bool[,,] isExternalBlock = GetExternalBlockMatrix();
 
         BuildOpaqueMesh(isExternalBlock);
@@ -601,11 +632,14 @@ public class WorldChunk : MonoBehaviour
                 }
                 else
                 {
-                    ntype = GetBlockType(worldPos, _seed);
+                    //ntype = GetBlockType(worldPos, _seed);
+                    int typeIndex = noiseManager.DetermineFirstPassBlockType(worldPos);
+                    ntype = BlockType.GetBlockType(typeIndex);
                 }
 
             }
-            visibility[ni] = (ntype == null || ntype.isTransparent) && (type != ntype);
+            //visibility[ni] = (ntype == null || ntype.isTransparent) && (type != ntype); //TODO? Put back
+            visibility[ni] = (ntype == null || ntype.isTransparent);
         }
 
         return visibility;
@@ -656,7 +690,7 @@ public class WorldChunk : MonoBehaviour
             //Transform child = transform.Find("Mesh (Opaque)");
             //child.name = "TO DESTROY";
             //Destroy(child.gameObject);
-            BuildMesh(); //TODO: Add chunk to build queue instead
+            Render(); //TODO: Add chunk to build queue instead
         }
 
         return shouldRebuild;

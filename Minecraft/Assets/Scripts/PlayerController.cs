@@ -100,7 +100,6 @@ public class PlayerController : MonoBehaviour
     private void Teleport() {
         if (RaycastToBlock(100, true, out Vector3Int hitBlockPosition)) {
             Teleport(hitBlockPosition);
-            Debug.Log("Teleporting...");
         }
         else {
             Debug.Log("No block to teleport to :(");
@@ -110,7 +109,6 @@ public class PlayerController : MonoBehaviour
     private void Teleport(Vector3 position) {
         characterController.enabled = false;
         Vector3 destination = position + (transform.position - feet.position);
-        Debug.Log($"Teleporting {(transform.position - destination).magnitude} units.");
         this.transform.position = position + (transform.position - feet.position);
         GameObject effect = Instantiate(teleportEffect, this.camera.position, Quaternion.identity);        
     }
@@ -253,7 +251,6 @@ public class PlayerController : MonoBehaviour
         {
             if (_isJumping) {
                 _isJumping = false;
-                Debug.Log(_jumpYVelocity);
                 if (_jumpYVelocity < -15.0f) {
                     AudioClip clip = _jumpYVelocity < -29f ? fallLandLargeClip : fallLandSmallClip;
                     AudioSource.PlayClipAtPoint(clip, this.feet.position, 1.0f);
@@ -423,9 +420,9 @@ public class PlayerController : MonoBehaviour
         Camera.main.backgroundColor = waterTintColor;
 
         //RenderSettings.fog = true;
-        RenderSettings.fogColor = waterTintColor;
-        RenderSettings.fogMode = FogMode.Exponential;
-        RenderSettings.fogDensity = 0.15f;
+        //RenderSettings.fogColor = waterTintColor;
+        //RenderSettings.fogMode = FogMode.Exponential;
+        //RenderSettings.fogDensity = 0.15f;
     }
 
     private void OnCameraExitWater()
@@ -434,10 +431,10 @@ public class PlayerController : MonoBehaviour
         Camera.main.backgroundColor = initialSkyColor;
 
         //RenderSettings.fog = false;
-        RenderSettings.fogColor = initialSkyColor;
-        RenderSettings.fogMode = FogMode.Linear;
-        RenderSettings.fogStartDistance = 60;
-        RenderSettings.fogEndDistance = 65;
+        //RenderSettings.fogColor = initialSkyColor;
+        //RenderSettings.fogMode = FogMode.Linear;
+        //RenderSettings.fogStartDistance = 60;
+        //RenderSettings.fogEndDistance = 65;
     }
 
     private void DoMouseRotation()
@@ -661,6 +658,12 @@ public class PlayerController : MonoBehaviour
                 break;
             case SlotItem.SlotItemType.Dirt:
                 PlaceBlock("Dirt");
+                break;
+            case SlotItem.SlotItemType.Cobblestone:
+                PlaceBlock("Cobblestone");
+                break;
+                case SlotItem.SlotItemType.Plank:
+                PlaceBlock("Plank");
                 break;
             case SlotItem.SlotItemType.CopyBlock:
                 PlaceSameBlock();

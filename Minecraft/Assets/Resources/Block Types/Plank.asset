@@ -10,24 +10,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 28a08073b11cc4289a3c8ab2936eedeb, type: 3}
-  m_Name: Sand
+  m_Name: Plank
   m_EditorClassIdentifier: 
   index: 7
-  name: Sand
+  name: Plank
   atlasPositions:
-  - {x: 0, y: 2}
+  - {x: 0, y: 5}
   isTransparent: 0
   isBillboard: 0
-  affectedByGravity: 1
+  affectedByGravity: 0
   isSourceBlock: 0
   mustBeOnGrassBlock: 0
-  digClip: {fileID: 8300000, guid: 05b3a6da54c2c4e89acdd463aa2f6832, type: 3}
+  digClip: {fileID: 8300000, guid: 0f36cd3ca7fe14eda9684f2d3cb197e7, type: 3}
   stepClips:
-  - {fileID: 8300000, guid: 7340df26276a248e0afc3bcd65d3f47e, type: 3}
-  - {fileID: 8300000, guid: 0fd3ccbae27c24640a6102a19e8c6c13, type: 3}
-  - {fileID: 8300000, guid: a4b95b25aa62e4aad9aad5e716e4911e, type: 3}
-  - {fileID: 8300000, guid: 508a3ba82ebf94b3fb10299b00bb93a6, type: 3}
-  - {fileID: 8300000, guid: f08f191b64d5c4540bb5f2e143937b2f, type: 3}
+  - {fileID: 8300000, guid: bb226b2c93c304cc494258f614588e28, type: 3}
+  - {fileID: 8300000, guid: d3c620592f01a43129432e1de5f9c43e, type: 3}
+  - {fileID: 8300000, guid: b4c7109681a5b421ebaaa71c2ad58273, type: 3}
+  - {fileID: 8300000, guid: cbba1fb6e2f574b2da3a5f21a6028a4c, type: 3}
+  - {fileID: 8300000, guid: c213bce8a961847e78c60f7cb625dd67, type: 3}
+  - {fileID: 8300000, guid: 53219e396b82f4e56b329ea29afd95c8, type: 3}
   breakParticleColors:
     m_Mode: 4
     m_GradientMin:
@@ -61,19 +62,19 @@ MonoBehaviour:
       m_NumAlphaKeys: 2
     m_GradientMax:
       serializedVersion: 2
-      key0: {r: 0.6862745, g: 0.65882355, b: 0.47058827, a: 1}
-      key1: {r: 0.81568635, g: 0.7725491, b: 0.6156863, a: 1}
-      key2: {r: 0.86666673, g: 0.83921576, b: 0.654902, a: 0}
-      key3: {r: 0.9607844, g: 0.9686275, b: 0.86666673, a: 0}
-      key4: {r: 0.9607844, g: 0.9686275, b: 0.86666673, a: 0}
+      key0: {r: 0.40000004, g: 0.32941177, b: 0.21960786, a: 1}
+      key1: {r: 0.5921569, g: 0.5058824, b: 0.3254902, a: 1}
+      key2: {r: 0.6862745, g: 0.5686275, b: 0.38431376, a: 0}
+      key3: {r: 0.69411767, g: 0.5803922, b: 0.40000004, a: 0}
+      key4: {r: 0.69411767, g: 0.5803922, b: 0.40000004, a: 0}
       key5: {r: 0, g: 0, b: 0, a: 0}
       key6: {r: 0, g: 0, b: 0, a: 0}
       key7: {r: 0, g: 0, b: 0, a: 0}
-      ctime0: 8674
-      ctime1: 22552
-      ctime2: 41827
-      ctime3: 65535
-      ctime4: 65535
+      ctime0: 11372
+      ctime1: 23130
+      ctime2: 42791
+      ctime3: 64571
+      ctime4: 64571
       ctime5: 0
       ctime6: 0
       ctime7: 0
@@ -90,4 +91,4 @@ MonoBehaviour:
       m_NumAlphaKeys: 2
     m_ColorMin: {r: 0, g: 0, b: 0, a: 0}
     m_ColorMax: {r: 0, g: 0, b: 0, a: 0}
-  blockBlastResistance: 1
+  blockBlastResistance: 2

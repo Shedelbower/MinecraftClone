@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1e016329a81f048cc9bfac0a99fb6354, type: 3}
-  m_Name: Copy Block
+  m_Name: Cobblestone
   m_EditorClassIdentifier: 
-  Image: {fileID: 21300000, guid: d7ea50f3df81e4fc0902d715691ca0f3, type: 3}
-  Type: 11
+  Image: {fileID: 21300000, guid: c9eee8857d76445d58a181ae93300a52, type: 3}
+  Type: 9

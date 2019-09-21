@@ -15,6 +15,8 @@ public class SlotItem : ScriptableObject
         Gravel,
         Sand,
         Bedrock,
+        Cobblestone,
+        Plank,
         CopyBlock
     }
     public Sprite Image;
