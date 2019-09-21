@@ -141,9 +141,14 @@ public class WorldChunk : MonoBehaviour
         {
             type = BlockType.GetBlockType("Bedrock");
         }
+        else if (y >= noise - 8 && y <= noise && isLake && isRavine == false)
+        {
+            type = (y >= noise - 3) ? BlockType.GetBlockType("Sand") : BlockType.GetBlockType("Sandstone");
+        }
         else if (y < baseNoise - 3 || (isRavine && y < baseNoise && y < noise))
         {
-            if (y < noise) {
+            if (y < noise)
+            {
                 type = BlockType.GetBlockType("Stone");
 
                 if (y < baseNoise - 35 && Random.value < 0.001f)
@@ -153,8 +158,9 @@ public class WorldChunk : MonoBehaviour
 
                 if (y <= baseNoise - ironDepth)
                 {
-                    float p1 = Mathf.PerlinNoise((x+offset.x) / 4f + 100, (z+offset.y) / 4f + 100);
-                    if (p1 > 0.7f) {
+                    float p1 = Mathf.PerlinNoise((x + offset.x) / 4f + 100, (z + offset.y) / 4f + 100);
+                    if (p1 > 0.7f)
+                    {
                         float p2 = Mathf.PerlinNoise(y / 4f, 0);
                         if (p2 > 0.7f)
                         {
@@ -164,11 +170,7 @@ public class WorldChunk : MonoBehaviour
                 }
             }
 
-            
-        }
-        else if (y >= noise - 5 && y <= noise && isLake && isRavine == false)
-        {
-            type = BlockType.GetBlockType("Sand");
+
         }
         else if (isLake && y <= waterLevel && isRavine == false)
         {
@@ -189,7 +191,8 @@ public class WorldChunk : MonoBehaviour
             if (p < 0.1f)
             {
                 type = BlockType.GetBlockType("Tall Grass");
-            } else if (p < 0.12f)
+            }
+            else if (p < 0.12f)
             {
                 float p2 = Random.value;
                 if (p2 < 0.2f)
