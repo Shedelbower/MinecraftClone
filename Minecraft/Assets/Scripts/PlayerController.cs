@@ -158,7 +158,7 @@ public class PlayerController : MonoBehaviour
     {
         HandleHotbarSelection();
 
-        _currPosition = new Vector3Int((int)transform.position.x, (int)transform.position.y, (int)transform.position.z);
+        _currPosition = Vector3Int.RoundToInt(transform.position);
 
         if (_currPosition != _prevPosition)
         {
@@ -490,9 +490,10 @@ public class PlayerController : MonoBehaviour
         Vector3Int blockPos;
         if (RaycastToBlock(10.0f, true, out blockPos))
         {
-            if (blockPos == _currPosition)
+            Vector3Int feetPos = Vector3Int.RoundToInt(feet.position);
+            if (blockPos == feetPos || blockPos == (feetPos + Vector3Int.up))
             {
-                return; // Don't place block in feet space
+                return; // Don't place block in feet or head space
             }
             List<Vector3Int> positions = new List<Vector3Int>();
             List<Block> blocks = new List<Block>();

@@ -431,7 +431,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   entityManager: {fileID: 1293213832}
-  noiseManager: {fileID: 0}
   useRandomSeed: 1
   seed: 2
   player: {fileID: 1253456488}
@@ -3580,7 +3579,7 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.1
+  near clip plane: 0.01
   far clip plane: 1000
   field of view: 60
   orthographic: 0
