@@ -116,7 +116,7 @@ public class PlayerController : MonoBehaviour
     void PlacePlayerOnSurface(bool playAudio)
     {
         Vector3 pos = transform.position;
-        pos.y = 60;
+        pos.y = 100;
         transform.position = pos;
         bool isOnGround = false;
         int iterations = 0;
