@@ -17,6 +17,7 @@ MonoBehaviour:
   atlasPositions:
   - {x: 5, y: 4}
   isTransparent: 1
+  isPlant: 1
   isBillboard: 1
   affectedByGravity: 0
   isSourceBlock: 0
@@ -85,3 +86,4 @@ MonoBehaviour:
       m_NumAlphaKeys: 2
     m_ColorMin: {r: 0, g: 0, b: 0, a: 0}
     m_ColorMax: {r: 0, g: 0, b: 0, a: 0}
+  blockBlastResistance: 0

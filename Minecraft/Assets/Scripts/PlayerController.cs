@@ -530,7 +530,7 @@ public class PlayerController : MonoBehaviour
         }
         BlockType targetType = targetBlock.type;
 
-        if (targetType.isBillboard)
+        if (targetType.isPlant)
         {
             return; // Don't place foliage blocks like grass and flowers.
         }
@@ -681,7 +681,8 @@ public class PlayerController : MonoBehaviour
         {
             Block hitBlock = chunkManager.GetBlockAtPosition(blockPos);
             bool isGrassBlock = hitBlock != null && hitBlock.type != null && hitBlock.type.name == "Grass";
-            if (isGrassBlock == false) {
+            bool isPlantBlock = hitBlock != null && hitBlock.type.isPlant;
+            if (isGrassBlock == false && isPlantBlock == false) {
                 return;
             }
 
@@ -696,18 +697,16 @@ public class PlayerController : MonoBehaviour
                 if (isAirBlock) {
                     Block blockBeneath = chunkManager.GetBlockAtPosition(pos + Vector3Int.down);
                     if (blockBeneath != null && blockBeneath.type.name == "Grass" && Random.value > 0.5f) {
-                        string[] plantBlockTypeNames = new string[] {
-                            "Daisy",
-                            "Orange Tulip",
-                            "Pink Tulip",
-                            "Red Tulip",
-                            "Yellow Flower",
-                            "Tall Grass",
-                            "Tall Grass",
-                            "Tall Grass",
-                            "Tall Grass"
-                        };
-                        string randomChoice = plantBlockTypeNames[Random.Range(0,plantBlockTypeNames.Length)];
+                        List<BlockType> blockTypeChoices;
+                        if (isGrassBlock)
+                        {
+                            blockTypeChoices = BlockType.GetPlantBlockTypes();
+                        } else
+                        {
+                            blockTypeChoices = new List<BlockType>() { hitBlock.type }; // Duplicate the selected plant block
+                        }
+                        
+                        BlockType randomChoice = blockTypeChoices[Random.Range(0, blockTypeChoices.Count)];
                         Block plantBlock = new Block(randomChoice);
                         replacementBlocks.Add(plantBlock);
                         replacementPositions.Add(pos);

@@ -16,6 +16,7 @@ public class BlockType : ScriptableObject
     // Top, Bottom, Front, Back, Left, Right
     public Vector2Int[] atlasPositions;
     public bool isTransparent;
+    public bool isPlant = false;
     public bool isBillboard = false;
     public bool affectedByGravity = false;
     public bool isSourceBlock = false;
@@ -91,5 +92,17 @@ public class BlockType : ScriptableObject
     public static BlockType GetBlockType(int index)
     {
         return IndexToBlockType[index];
+    }
+
+    public static List<BlockType> GetPlantBlockTypes()
+    {
+        List<BlockType> plantTypes = new List<BlockType>();
+        foreach (var type in NameToBlockType.Values)
+        {
+            if (type.isPlant) { 
+                plantTypes.Add(type);
+            }   
+        }
+        return plantTypes;
     }
 }
