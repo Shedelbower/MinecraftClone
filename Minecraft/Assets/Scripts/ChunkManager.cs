@@ -5,7 +5,7 @@ using UnityEngine;
 public class ChunkManager : MonoBehaviour
 {
 
-    private static readonly float CHUNK_UPDATE_INTERVAL = 0.5f;
+    private static readonly float CHUNK_UPDATE_INTERVAL = 0.1f;
     public EntityManager entityManager;
     public bool useRandomSeed = false;
     public int seed;
@@ -32,6 +32,7 @@ public class ChunkManager : MonoBehaviour
     private Queue<Vector3Int> _chunkUnloadQueue;
 
     private HashSet<Vector3Int> _chunksToUpdate;
+    private HashSet<Vector3Int> _blocksToUpdate;
 
     private Vector3Int _prevPlayerChunk;
 
@@ -56,7 +57,8 @@ public class ChunkManager : MonoBehaviour
         _chunkLoadQueue = new Queue<Vector3Int>();
         _chunkUnloadQueue = new Queue<Vector3Int>();
 
-        _chunksToUpdate = new HashSet<Vector3Int>();
+        //_chunksToUpdate = new HashSet<Vector3Int>();
+        _blocksToUpdate = new HashSet<Vector3Int>();
 
 
         _prevPlayerChunk = Vector3Int.one * int.MaxValue;
@@ -172,36 +174,44 @@ public class ChunkManager : MonoBehaviour
             UnloadChunksImmediately();
         }
 
-        if (_chunksToUpdate.Count > 0)
+        //if (_chunksToUpdate.Count > 0)
+        //{
+        //    _chunkUpdateTimer += Time.deltaTime;
+        //    if (_chunkUpdateTimer > CHUNK_UPDATE_INTERVAL)
+        //    {
+        //        UpdateChunks();
+        //        _chunkUpdateTimer = 0.0f;
+        //    }
+        //}
+
+        if (_blocksToUpdate.Count > 0)
         {
             _chunkUpdateTimer += Time.deltaTime;
             if (_chunkUpdateTimer > CHUNK_UPDATE_INTERVAL)
             {
-                UpdateChunks();
+                UpdateBlocks();
                 _chunkUpdateTimer = 0.0f;
             }
         }
     }
 
-    private void UpdateChunks()
+    private void UpdateBlocks()
     {
-        //Queue<Vector3Int> nextQueue = new HashSet<Vector3Int>();
-        Vector3Int[] chunksToUpdate = new Vector3Int[_chunksToUpdate.Count];
-        _chunksToUpdate.CopyTo(chunksToUpdate);
-        foreach(Vector3Int chunkID in chunksToUpdate)
+        HashSet<Vector3Int> nextBlocksToUpdate = new HashSet<Vector3Int>();
+
+        foreach(Vector3Int blockPos in _blocksToUpdate)
         {
-            _chunksToUpdate.Remove(chunkID);
-            if (_chunks.ContainsKey(chunkID))
+            Vector3Int chunkId = GetNearestChunkPosition(blockPos);
+
+            if (_chunks.ContainsKey(chunkId))
             {
-                WorldChunk chunk = _chunks[chunkID];
-                if (chunk.UpdateChunk())
-                {
-                    //nextQueue.Enqueue(chunkID);
-                }
+                WorldChunk chunk = _chunks[chunkId];
+
+                nextBlocksToUpdate.UnionWith(chunk.UpdateBlock(blockPos));
             }
         }
 
-        //_chunkUpdateQueue = nextQueue;
+        _blocksToUpdate = nextBlocksToUpdate;
     }
 
     public void UpdateLoadedChunks()
@@ -358,7 +368,7 @@ public class ChunkManager : MonoBehaviour
         return Vector3Int.CeilToInt(player.transform.position);
     }
 
-    public bool ModifyBlock(Vector3Int position, Block newBlock)
+    public HashSet<Vector3Int> ModifyBlock(Vector3Int position, Block newBlock)
     {
         List<Vector3Int> positions = new List<Vector3Int>();
         List<Block> newBlocks = new List<Block>();
@@ -367,81 +377,89 @@ public class ChunkManager : MonoBehaviour
         return ModifyBlocks(positions, newBlocks);
     }
 
-    public bool ModifyBlocks(List<Vector3Int> positions, List<Block> newBlocks)
+    public HashSet<Vector3Int> ModifyBlocks(List<Vector3Int> positions, List<Block> newBlocks)
     {
         HashSet<WorldChunk> relevantChunks = new HashSet<WorldChunk>();
+        HashSet<Vector3Int> blocksToUpdate = new HashSet<Vector3Int>();
 
         foreach (Vector3Int pos in positions)
         {
             relevantChunks.Add(GetNearestChunk(pos));
         }
 
-        bool anyChunkModified = false;
+        //bool anyChunkModified = false;
 
-        foreach(WorldChunk chunk in relevantChunks)
+        foreach (WorldChunk chunk in relevantChunks)
         {
             if (chunk != null)
             {
-                bool chunkWasModified = chunk.ModifyBlocks(positions, newBlocks);
+                HashSet<Vector3Int> touchedBlocks = chunk.ModifyBlocks(positions, newBlocks);
+                bool chunkWasModified = touchedBlocks.Count > 0;
 
                 if (chunkWasModified)
                 {
-                    _chunksToUpdate.Add(chunk.ID);
+                    blocksToUpdate.UnionWith(touchedBlocks);
+                    //_chunksToUpdate.Add(chunk.ID);
                     //_chunkUpdateQueue.Enqueue(chunk.ID);
-                    anyChunkModified = true;
+                    //anyChunkModified = true;
                 }
             }
         }
 
-        if (anyChunkModified)
-        {
+        //if (anyChunkModified)
+        //{
 
 
-            // Hack for updating neighboring chunks as well.
-            // Otherwise there can be holes in the meshes where the neighboring chunks don't update a previously invisible cube face
-            HashSet<Vector3Int> surroundingPositions = new HashSet<Vector3Int>();
+        //    // Hack for updating neighboring chunks as well.
+        //    // Otherwise there can be holes in the meshes where the neighboring chunks don't update a previously invisible cube face
+        //    HashSet<Vector3Int> surroundingPositions = new HashSet<Vector3Int>();
 
-            foreach (Vector3Int pos in positions)
-            {
-                for (int dx = -1; dx <= 1; dx++)
-                {
-                    for (int dy = -1; dy <= 1; dy++)
-                    {
-                        for (int dz = -1; dz <= 1; dz++)
-                        {
-                            Vector3Int dpos = new Vector3Int(dx, dy, dz);
-                            surroundingPositions.Add(pos + dpos);
-                        }
-                    }
-                }
-            }
-
-
-            foreach (Vector3Int pos in surroundingPositions)
-            {
-                relevantChunks.Add(GetNearestChunk(pos));
-            }
-
-            //foreach (WorldChunk chunk in relevantChunks)
-            //{
-            //    if (chunk != null)
-            //    {
-            //        chunk.UpdateChunk();
-            //    }
-            //}
-
-            foreach (WorldChunk chunk in relevantChunks)
-            {
-                if (chunk != null)
-                {
-                    chunk.BuildMesh();
-                }
-            }
+        //    foreach (Vector3Int pos in positions)
+        //    {
+        //        for (int dx = -1; dx <= 1; dx++)
+        //        {
+        //            for (int dy = -1; dy <= 1; dy++)
+        //            {
+        //                for (int dz = -1; dz <= 1; dz++)
+        //                {
+        //                    Vector3Int dpos = new Vector3Int(dx, dy, dz);
+        //                    surroundingPositions.Add(pos + dpos);
+        //                }
+        //            }
+        //        }
+        //    }
 
 
-        }
+        //    foreach (Vector3Int pos in surroundingPositions)
+        //    {
+        //        relevantChunks.Add(GetNearestChunk(pos));
+        //    }
 
-        return anyChunkModified;
+        //    //foreach (WorldChunk chunk in relevantChunks)
+        //    //{
+        //    //    if (chunk != null)
+        //    //    {
+        //    //        chunk.UpdateChunk();
+        //    //    }
+        //    //}
+
+        //    foreach (WorldChunk chunk in relevantChunks)
+        //    {
+        //        if (chunk != null)
+        //        {
+        //            chunk.BuildMesh();
+        //        }
+        //    }
+
+
+        //}
+
+
+        return blocksToUpdate;
     }
 
+    public void AddBlocksToUpdateQueue(List<Vector3Int> blockPositions)
+    {
+        _blocksToUpdate.UnionWith(blockPositions);
+    }
 }

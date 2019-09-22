@@ -502,6 +502,9 @@ public class PlayerController : MonoBehaviour
             blocks.Add(block);
 
             chunkManager.ModifyBlocks(positions, blocks);
+            var blocksToUpdate = WorldChunk.GetNeighbors(blockPos);
+            blocksToUpdate.Add(blockPos);
+            chunkManager.AddBlocksToUpdateQueue(blocksToUpdate);
 
             PlayBlockSound(block.type.name, blockPos);
 
@@ -575,8 +578,11 @@ public class PlayerController : MonoBehaviour
             
 
             chunkManager.ModifyBlocks(positions, blocks);
+            var blocksToUpdate = WorldChunk.GetNeighbors(blockPos);
+            blocksToUpdate.Add(blockPos);
+            chunkManager.AddBlocksToUpdateQueue(blocksToUpdate);
 
-            
+
         }
     }
 

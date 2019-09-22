@@ -75,7 +75,6 @@ public class WorldChunk : MonoBehaviour
             }
         }
 
-        Debug.Log("Initialized Blocks in Chunk");
     }
 
     public static BlockType GetBlockType(Vector3 pos, int seed)
@@ -156,7 +155,7 @@ public class WorldChunk : MonoBehaviour
                     type = BlockType.GetBlockType("Diamond Ore");
                 }
 
-                if (type == null)
+                if (type == null && y <= baseNoise - 8)
                 {
                     float p1 = Mathf.PerlinNoise((x + offset.x) / 6f + 0.5f, (z + offset.y) / 6f + 0.5f);
                     if (p1 > 0.6f)
@@ -552,6 +551,19 @@ public class WorldChunk : MonoBehaviour
         return isExternalBlock;
     }
 
+    public static List<Vector3Int> GetNeighbors(Vector3Int worldPos)
+    {
+        List<Vector3Int> neighbors = new List<Vector3Int>();
+        neighbors.Add(worldPos + Vector3Int.up);
+        neighbors.Add(worldPos + Vector3Int.down);
+        neighbors.Add(worldPos + Vector3Int.right);
+        neighbors.Add(worldPos + Vector3Int.left);
+        neighbors.Add(worldPos + new Vector3Int(0,0,1));
+        neighbors.Add(worldPos + new Vector3Int(0,0,-1));
+        return neighbors;
+    }
+
+
     protected List<Vector3Int> GetNeighbors(int i, int j, int k)
     {
         List<Vector3Int> neighbors = new List<Vector3Int>();
@@ -644,8 +656,9 @@ public class WorldChunk : MonoBehaviour
         return localPos.x >= 0 && localPos.z >= 0 && localPos.x < _size.x && localPos.z < _size.z && localPos.y >= 0 && localPos.y < _size.y;
     }
 
-    public bool ModifyBlocks(List<Vector3Int> positions, List<Block> newBlocks)
+    public HashSet<Vector3Int> ModifyBlocks(List<Vector3Int> positions, List<Block> newBlocks)
     {
+        HashSet<Vector3Int> blocksToUpdate = new HashSet<Vector3Int>();
         bool shouldRebuild = false;
 
         for (int i = 0; i < positions.Count; i++)
@@ -663,6 +676,9 @@ public class WorldChunk : MonoBehaviour
                 {
                     _blocks[localPos.x, localPos.y, localPos.z] = newBlock;
                     shouldRebuild = true;
+
+                    var neighbors = GetNeighbors(worldPos);
+                    blocksToUpdate.UnionWith(neighbors);
                 }
             }
         }
@@ -677,7 +693,7 @@ public class WorldChunk : MonoBehaviour
             BuildMesh(); //TODO: Add chunk to build queue instead
         }
 
-        return shouldRebuild;
+        return blocksToUpdate;
     }
 
     public Vector3 Center()
@@ -709,44 +725,44 @@ public class WorldChunk : MonoBehaviour
         }
     }
 
-    public bool UpdateChunk()
-    {
-        bool anyBlockModified = false;
-        for (int i = 0; i < _size.x; i++)
-        {
-            for (int j = 0; j < _size.y; j++)
-            {
-                for (int k = 0; k < _size.z; k++)
-                {
-                    Vector3Int localPos = new Vector3Int(i,j,k);
-                    Vector3Int worldPos = LocalToWorldPosition(localPos);
-                    anyBlockModified |= UpdateBlock(worldPos);
-                }
-            }
-        }
-        return anyBlockModified;
-    }
+    //public bool UpdateChunk()
+    //{
+    //    bool anyBlockModified = false;
+    //    for (int i = 0; i < _size.x; i++)
+    //    {
+    //        for (int j = 0; j < _size.y; j++)
+    //        {
+    //            for (int k = 0; k < _size.z; k++)
+    //            {
+    //                Vector3Int localPos = new Vector3Int(i,j,k);
+    //                Vector3Int worldPos = LocalToWorldPosition(localPos);
+    //                anyBlockModified |= UpdateBlock(worldPos);
+    //            }
+    //        }
+    //    }
+    //    return anyBlockModified;
+    //}
 
-    private bool UpdateBlock(Vector3Int worldPos)
+    public HashSet<Vector3Int> UpdateBlock(Vector3Int worldPos)
     {
+        HashSet<Vector3Int> nextBlocksToUpdate = new HashSet<Vector3Int>();
+
         Vector3Int localPos = WorldToLocalPosition(worldPos);
         Block blockToUpdate = _blocks[localPos.x, localPos.y, localPos.z];
 
         if (blockToUpdate == null)
         {
-            return false;
+            //return blocksToUpdate;
+            // Ignore
         }
-
-        if (blockToUpdate.type.isSourceBlock)
+        else if (blockToUpdate.type.isSourceBlock)
         {
             Vector3Int bottomPos = worldPos;
             bottomPos.y--;
             Block bottomBlock = chunkManager.GetBlockAtPosition(bottomPos);
             if (bottomBlock == null || bottomBlock.type.name == "Air")
             {
-                chunkManager.ModifyBlock(bottomPos, blockToUpdate);
-                
-                return false;
+                nextBlocksToUpdate.UnionWith(chunkManager.ModifyBlock(bottomPos, blockToUpdate));
             } else
             {
                 //Vector3Int[] adjacentPositions =
@@ -775,10 +791,14 @@ public class WorldChunk : MonoBehaviour
             Block bottomBlock = chunkManager.GetBlockAtPosition(bottomPos);
             if (bottomBlock == null || bottomBlock.type.isTransparent)
             {
-                // chunkManager.ModifyBlock(bottomPos, blockToUpdate);
-                chunkManager.ModifyBlock(worldPos, null);
+                nextBlocksToUpdate.UnionWith(chunkManager.ModifyBlock(worldPos, null));
                 chunkManager.entityManager.CreateBlockEntity(worldPos,blockToUpdate.type);
-                return true;
+
+                //nextBlocksToUpdate.Add(worldPos + Vector3Int.up);
+                //nextBlocksToUpdate.Add(worldPos + Vector3Int.right);
+                //nextBlocksToUpdate.Add(worldPos + Vector3Int.left);
+                //nextBlocksToUpdate.Add(worldPos + new Vector3Int(0,0,1));
+                //nextBlocksToUpdate.Add(worldPos + new Vector3Int(0, 0, -1));
             }
         }
         else if (blockToUpdate.type.mustBeOnGrassBlock)
@@ -790,11 +810,10 @@ public class WorldChunk : MonoBehaviour
             {
                 chunkManager.ModifyBlock(bottomPos, null);
                 chunkManager.ModifyBlock(worldPos, null);
-                return true;
             }
         }
 
-        return false;
+        return nextBlocksToUpdate;
     }
 
 }
