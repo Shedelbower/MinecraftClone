@@ -372,7 +372,7 @@ public class PlayerController : MonoBehaviour
     {
         if (_movementSincePrevStep > 2f) {
             _movementSincePrevStep = 0.0f;
-            Vector3Int positionBeneathFeet = _currPosition + Vector3Int.down;
+            Vector3Int positionBeneathFeet = _currPosition + Vector3Int.down * 2;
             Block blockBeneathFeet = chunkManager.GetBlockAtPosition(positionBeneathFeet);
             if (blockBeneathFeet != null && blockBeneathFeet.type != null)
             {
