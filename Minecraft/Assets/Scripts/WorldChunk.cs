@@ -108,12 +108,15 @@ public class WorldChunk : MonoBehaviour
         float ox = 1 * (x) / (float)32 + offset.x;
         float oz = 1 * (z) / (float)32 + offset.y;
 
-        int baseNoise = Mathf.FloorToInt(Mathf.PerlinNoise(ox, oz) * 25);
-        baseNoise += 30;
+        float p0 = Mathf.PerlinNoise(ox, oz);
+        p0 = Mathf.Pow(p0, 1.5f);
+
+        int baseNoise = Mathf.FloorToInt(p0 * 20);
+        baseNoise += 63;
 
         BlockType type = null;
 
-        int waterLevel = 35;
+        int waterLevel = 65;
         int ironDepth = 5;
 
         float ridgeMask = Mathf.PerlinNoise((x + offset.x) / 60f, (z + offset.y)/60f);
@@ -130,9 +133,9 @@ public class WorldChunk : MonoBehaviour
             isRavine = ridgeNoise < 0.15f && baseNoise > waterLevel + 1;
 
             if (isInnerRavine) {
-                noise -= 20;
+                noise -= 16;
             } else if (isRavine) {
-                noise -= Mathf.RoundToInt(20 * (1-Mathf.InverseLerp(0.1f,0.15f,ridgeNoise)));
+                noise -= Mathf.RoundToInt(16 * (1-Mathf.InverseLerp(0.1f,0.15f,ridgeNoise)));
             }
         }
 
@@ -231,6 +234,9 @@ public class WorldChunk : MonoBehaviour
                 }
 
             }
+        } else
+        {
+            // Air block
         }
 
         return type;
