@@ -773,30 +773,35 @@ public class WorldChunk : MonoBehaviour
             Vector3Int bottomPos = worldPos;
             bottomPos.y--;
             Block bottomBlock = chunkManager.GetBlockAtPosition(bottomPos);
-            if (bottomBlock == null || bottomBlock.type.name == "Air")
+            if (bottomBlock == null || (bottomBlock.type.isTransparent && bottomBlock.type.name != "Water"))
             {
                 nextBlocksToUpdate.UnionWith(chunkManager.ModifyBlock(bottomPos, blockToUpdate, out HashSet<WorldChunk> modified));
                 modifedChunks.UnionWith(modified);
-            } else
+            } else if (bottomBlock.type.name != "Water")
             {
-                //Vector3Int[] adjacentPositions =
-                //{
-                //    worldPos + Vector3Int.right,
-                //    worldPos - Vector3Int.right,
-                //    worldPos + new Vector3Int(0,0,1),
-                //    worldPos - new Vector3Int(0,0,1),
-                //};
+                Vector3Int[] adjacentPositions =
+                {
+                    worldPos + Vector3Int.right,
+                    worldPos + Vector3Int.left,
+                    worldPos + new Vector3Int(0,0,1),
+                    worldPos + new Vector3Int(0,0,-1),
+                };
 
-                //Block[] newBlocks =
-                //{
-                //    blockToUpdate,
-                //    blockToUpdate,
-                //    blockToUpdate,
-                //    blockToUpdate
-                //};
+                List<Vector3Int> positionsToModify = new List<Vector3Int>();
+                List<Block> newBlocks = new List<Block>();
+                foreach (Vector3Int adjPos in adjacentPositions)
+                {
+                    Block target = chunkManager.GetBlockAtPosition(adjPos);
+                    if (target == null || (target.type.isTransparent && target.type.name != "Water"))
+                    {
+                        positionsToModify.Add(adjPos);
+                        newBlocks.Add(blockToUpdate);
+                        nextBlocksToUpdate.Add(adjPos);
+                    }
+                }
 
-                //chunkManager.ModifyBlocks(adjacentPositions.ToList(), newBlocks.ToList());
-                //return true;
+                chunkManager.ModifyBlocks(positionsToModify, newBlocks, out HashSet<WorldChunk> modified);
+                modifedChunks.UnionWith(modified);
             }
         } else if (blockToUpdate.type.affectedByGravity)
         {
