@@ -158,30 +158,29 @@ public class WorldChunk : MonoBehaviour
                     type = BlockType.GetBlockType("Diamond Ore");
                 }
 
-                if (type == null && y <= baseNoise - 8)
+                if (type == null && y <= baseNoise - 6)
                 {
                     float p1 = Mathf.PerlinNoise((x + offset.x) / 6f + 0.5f, (z + offset.y) / 6f + 0.5f);
-                    if (p1 > 0.6f)
+                    float p2 = Mathf.PerlinNoise(y / 6f, 0);
+
+                    float p3 = p1 + p2;
+                    if (p3 > 1.3f)
                     {
-                        float p2 = Mathf.PerlinNoise(y / 6f, 0);
-                        if (p2 > 0.6f)
-                        {
-                            type = BlockType.GetBlockType("Gravel");
-                        }
+                        type = BlockType.GetBlockType("Gravel");
                     }
                 }
 
                 if (type == null && y <= baseNoise - ironDepth)
                 {
                     float p1 = Mathf.PerlinNoise((x + offset.x) / 4f + 100, (z + offset.y) / 4f + 100);
-                    if (p1 > 0.7f)
+                    float p2 = Mathf.PerlinNoise(y / 4f, 0);
+
+                    float p3 = p1 + p2;
+                    if (p3 > 1.4f)
                     {
-                        float p2 = Mathf.PerlinNoise(y / 4f, 0);
-                        if (p2 > 0.7f)
-                        {
-                            type = BlockType.GetBlockType("Iron Ore");
-                        }
+                        type = BlockType.GetBlockType("Iron Ore");
                     }
+
                 }
 
                 type = type ?? BlockType.GetBlockType("Stone");
@@ -508,8 +507,6 @@ public class WorldChunk : MonoBehaviour
         mr.sharedMaterial = chunkFoliageMaterial;
         mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.TwoSided;
         mc.sharedMesh = mf.sharedMesh;
-        //mc.convex = true; // TODO: Temporary fix
-        //mc.isTrigger = true;
 
         return final;
     }
