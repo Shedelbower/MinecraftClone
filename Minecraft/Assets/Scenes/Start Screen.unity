@@ -1372,12 +1372,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   textPool:
   - Hello darkness my old friend...
-  - Curse you Perry the Platypus!
   - Hey Vsauce, Michael here
-  - RIP Joergen
   - yOu CaN`t MaKe AnOtHeR MiNeCrAfT cLoNe
-  - '.... . .-.. .-.. ---'
-  - http://tiny.cc/jkzzaz
   - More blocks than JS frameworks
   - Now gluten free!
   - Real programmers code in binary
@@ -1386,7 +1382,6 @@ MonoBehaviour:
   - Feel the power of Flex Tape!
   - Machine learning is just a bunch of IF statements
   - Well it works on my machine
-  - Soon every website will have a Kanban board
   maxScale: 1.2
   minScale: 1
   animationInterval: 2
