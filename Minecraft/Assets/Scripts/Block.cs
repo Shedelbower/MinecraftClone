@@ -60,7 +60,15 @@ public class Block
             new Vector3(-1.0f, -1.0f, 0.0f)
         };
 
+        Color[] baseColors = {
+            Color.black,
+            Color.red,
+            Color.red,
+            Color.black,
+        };
+
         List<Vector3> vertices = new List<Vector3>();
+        List<Color> colors = new List<Color>();
 
         Quaternion[] rotations =
         {
@@ -76,8 +84,10 @@ public class Block
             Quaternion rotation = rotations[i];
             foreach(Vector3 vertex in baseVertices)
             {
-                vertices.Add(rotation * vertex * 0.7071f);
+                vertices.Add(rotation * vertex * 0.5f);
             }
+
+            colors.AddRange(baseColors);
         }
 
         List<Vector3> normals = new List<Vector3>();
@@ -101,15 +111,8 @@ public class Block
             0+8, 1+8, 2+8, 0+8, 2+8, 3+8,
             0+12, 1+12, 2+12, 0+12, 2+12, 3+12
         };
-        
 
-        // Mesh mesh = new Mesh();
-        // mesh.SetVertices(vertices);
-        // mesh.SetNormals(normals);
-        // mesh.SetUVs(0, uvs);
-        // mesh.SetTriangles(triangles, 0);
-
-        MeshData data = new MeshData(vertices,normals,uvs,triangles);
+        MeshData data = new MeshData(vertices,normals,uvs,triangles,colors.ToArray());
 
         return data;
     }
