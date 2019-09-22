@@ -41,7 +41,7 @@ public class BlockEntity : Entity
                 // Landed on a block
                 Destroy(this.gameObject);
                 Block newBlock = new Block(_blockType);
-                _chunkManager.ModifyBlock(pos + Vector3Int.up, newBlock);
+                _chunkManager.ModifyAndUpdateBlock(pos + Vector3Int.up, newBlock);
             }
         }
     }

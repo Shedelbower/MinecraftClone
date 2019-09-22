@@ -501,10 +501,7 @@ public class PlayerController : MonoBehaviour
             positions.Add(blockPos);
             blocks.Add(block);
 
-            chunkManager.ModifyBlocks(positions, blocks);
-            var blocksToUpdate = WorldChunk.GetNeighbors(blockPos);
-            blocksToUpdate.Add(blockPos);
-            chunkManager.AddBlocksToUpdateQueue(blocksToUpdate);
+            chunkManager.ModifyAndUpdateBlocks(positions, blocks);
 
             PlayBlockSound(block.type.name, blockPos);
 
@@ -577,10 +574,7 @@ public class PlayerController : MonoBehaviour
             }
             
 
-            chunkManager.ModifyBlocks(positions, blocks);
-            var blocksToUpdate = WorldChunk.GetNeighbors(blockPos);
-            blocksToUpdate.Add(blockPos);
-            chunkManager.AddBlocksToUpdateQueue(blocksToUpdate);
+            chunkManager.ModifyAndUpdateBlocks(positions, blocks);
 
 
         }
@@ -721,7 +715,7 @@ public class PlayerController : MonoBehaviour
                 }
             }
 
-            chunkManager.ModifyBlocks(replacementPositions, replacementBlocks);
+            chunkManager.ModifyAndUpdateBlocks(replacementPositions, replacementBlocks);
 
             if (replacementBlocks.Count > 0) {
                 GameObject effect = Instantiate(growthEffect, null) as GameObject;

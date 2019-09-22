@@ -207,7 +207,12 @@ public class ChunkManager : MonoBehaviour
             {
                 WorldChunk chunk = _chunks[chunkId];
 
-                nextBlocksToUpdate.UnionWith(chunk.UpdateBlock(blockPos));
+                nextBlocksToUpdate.UnionWith(chunk.UpdateBlock(blockPos, out HashSet<WorldChunk> touchedChunks));
+
+                foreach (WorldChunk touchedChunk in touchedChunks)
+                {
+                    touchedChunk.BuildMesh();
+                }
             }
         }
 
@@ -368,17 +373,18 @@ public class ChunkManager : MonoBehaviour
         return Vector3Int.CeilToInt(player.transform.position);
     }
 
-    public HashSet<Vector3Int> ModifyBlock(Vector3Int position, Block newBlock)
+    public HashSet<Vector3Int> ModifyBlock(Vector3Int position, Block newBlock, out HashSet<WorldChunk> modifiedChunks)
     {
         List<Vector3Int> positions = new List<Vector3Int>();
         List<Block> newBlocks = new List<Block>();
         positions.Add(position);
         newBlocks.Add(newBlock);
-        return ModifyBlocks(positions, newBlocks);
+        return ModifyBlocks(positions, newBlocks, out modifiedChunks);
     }
 
-    public HashSet<Vector3Int> ModifyBlocks(List<Vector3Int> positions, List<Block> newBlocks)
+    public HashSet<Vector3Int> ModifyBlocks(List<Vector3Int> positions, List<Block> newBlocks, out HashSet<WorldChunk> modifiedChunks)
     {
+        modifiedChunks = new HashSet<WorldChunk>();
         HashSet<WorldChunk> relevantChunks = new HashSet<WorldChunk>();
         HashSet<Vector3Int> blocksToUpdate = new HashSet<Vector3Int>();
 
@@ -387,79 +393,75 @@ public class ChunkManager : MonoBehaviour
             relevantChunks.Add(GetNearestChunk(pos));
         }
 
-        //bool anyChunkModified = false;
-
         foreach (WorldChunk chunk in relevantChunks)
         {
             if (chunk != null)
             {
-                HashSet<Vector3Int> touchedBlocks = chunk.ModifyBlocks(positions, newBlocks);
+                HashSet<Vector3Int> touchedBlocks = chunk.ModifyBlocks(positions, newBlocks, out HashSet<WorldChunk> touchedChunks); // TODO: Should I add these to modifed chunks
                 bool chunkWasModified = touchedBlocks.Count > 0;
 
                 if (chunkWasModified)
                 {
                     blocksToUpdate.UnionWith(touchedBlocks);
-                    //_chunksToUpdate.Add(chunk.ID);
-                    //_chunkUpdateQueue.Enqueue(chunk.ID);
-                    //anyChunkModified = true;
+                    modifiedChunks.Add(chunk);
+                    modifiedChunks.UnionWith(touchedChunks);
                 }
             }
         }
 
-        //if (anyChunkModified)
-        //{
-
-
-        //    // Hack for updating neighboring chunks as well.
-        //    // Otherwise there can be holes in the meshes where the neighboring chunks don't update a previously invisible cube face
-        //    HashSet<Vector3Int> surroundingPositions = new HashSet<Vector3Int>();
-
-        //    foreach (Vector3Int pos in positions)
-        //    {
-        //        for (int dx = -1; dx <= 1; dx++)
-        //        {
-        //            for (int dy = -1; dy <= 1; dy++)
-        //            {
-        //                for (int dz = -1; dz <= 1; dz++)
-        //                {
-        //                    Vector3Int dpos = new Vector3Int(dx, dy, dz);
-        //                    surroundingPositions.Add(pos + dpos);
-        //                }
-        //            }
-        //        }
-        //    }
-
-
-        //    foreach (Vector3Int pos in surroundingPositions)
-        //    {
-        //        relevantChunks.Add(GetNearestChunk(pos));
-        //    }
-
-        //    //foreach (WorldChunk chunk in relevantChunks)
-        //    //{
-        //    //    if (chunk != null)
-        //    //    {
-        //    //        chunk.UpdateChunk();
-        //    //    }
-        //    //}
-
-        //    foreach (WorldChunk chunk in relevantChunks)
-        //    {
-        //        if (chunk != null)
-        //        {
-        //            chunk.BuildMesh();
-        //        }
-        //    }
-
-
-        //}
-
-
         return blocksToUpdate;
     }
 
-    public void AddBlocksToUpdateQueue(List<Vector3Int> blockPositions)
+    public bool ModifyAndUpdateBlock(Vector3Int position, Block newBlock)
     {
-        _blocksToUpdate.UnionWith(blockPositions);
+        List<Vector3Int> positions = new List<Vector3Int>();
+        List<Block> newBlocks = new List<Block>();
+        positions.Add(position);
+        newBlocks.Add(newBlock);
+        return ModifyAndUpdateBlocks(positions, newBlocks);
+    }
+
+    public bool ModifyAndUpdateBlocks(List<Vector3Int> positions, List<Block> newBlocks)
+    {
+        HashSet<WorldChunk> relevantChunks = new HashSet<WorldChunk>();
+        HashSet<WorldChunk> chunksToRebuild = new HashSet<WorldChunk>();
+        HashSet<Vector3Int> blocksToUpdate = new HashSet<Vector3Int>();
+
+        foreach (Vector3Int pos in positions)
+        {
+            relevantChunks.Add(GetNearestChunk(pos));
+        }
+
+        foreach (WorldChunk chunk in relevantChunks)
+        {
+            if (chunk != null)
+            {
+                HashSet<Vector3Int> touchedBlocks = chunk.ModifyBlocks(positions, newBlocks, out HashSet<WorldChunk> touchedChunks);
+                bool chunkWasModified = touchedBlocks.Count > 0 || touchedChunks.Count > 0;
+
+                if (chunkWasModified)
+                {
+                    blocksToUpdate.UnionWith(touchedBlocks);
+                    chunksToRebuild.Add(chunk);
+                    chunksToRebuild.UnionWith(touchedChunks);
+                }
+            }
+        }
+
+        bool shouldRebuildChunks = chunksToRebuild.Count > 0;
+
+        if (shouldRebuildChunks)
+        {
+            // Rebuild the modified chunks.
+            foreach (WorldChunk chunk in chunksToRebuild)
+            {
+                chunk.BuildMesh();
+            }
+        }
+
+        // Add more blocks to the update list
+        _blocksToUpdate.UnionWith(blocksToUpdate);
+
+        return shouldRebuildChunks;
     }
 }

@@ -112,7 +112,7 @@ public class TNTController : MonoBehaviour
                 replacements.Add(replacement);
             }
 
-            _chunkManager.ModifyBlocks(positions, replacements);
+            _chunkManager.ModifyAndUpdateBlocks(positions, replacements);
         }
 
         // Effect 

@@ -656,8 +656,9 @@ public class WorldChunk : MonoBehaviour
         return localPos.x >= 0 && localPos.z >= 0 && localPos.x < _size.x && localPos.z < _size.z && localPos.y >= 0 && localPos.y < _size.y;
     }
 
-    public HashSet<Vector3Int> ModifyBlocks(List<Vector3Int> positions, List<Block> newBlocks)
+    public HashSet<Vector3Int> ModifyBlocks(List<Vector3Int> positions, List<Block> newBlocks, out HashSet<WorldChunk> touchedChunks)
     {
+        touchedChunks = new HashSet<WorldChunk>(); // Adjacent chunks that are adjacent to one of the modified blocks.
         HashSet<Vector3Int> blocksToUpdate = new HashSet<Vector3Int>();
         bool shouldRebuild = false;
 
@@ -678,6 +679,17 @@ public class WorldChunk : MonoBehaviour
                     shouldRebuild = true;
 
                     var neighbors = GetNeighbors(worldPos);
+                    foreach(var neighbor in neighbors)
+                    {
+                        if (LocalPositionIsInRange(WorldToLocalPosition(neighbor)) == false)
+                        {
+                            // Neighbor is in an adjacent chunk
+                            WorldChunk neighborChunk = chunkManager.GetNearestChunk(neighbor);
+                            touchedChunks.Add(neighborChunk);
+                        }
+                    }
+
+                    neighbors.Add(worldPos);
                     blocksToUpdate.UnionWith(neighbors);
                 }
             }
@@ -690,7 +702,7 @@ public class WorldChunk : MonoBehaviour
             //Transform child = transform.Find("Mesh (Opaque)");
             //child.name = "TO DESTROY";
             //Destroy(child.gameObject);
-            BuildMesh(); //TODO: Add chunk to build queue instead
+            //BuildMesh(); //TODO: Add chunk to build queue instead
         }
 
         return blocksToUpdate;
@@ -743,8 +755,9 @@ public class WorldChunk : MonoBehaviour
     //    return anyBlockModified;
     //}
 
-    public HashSet<Vector3Int> UpdateBlock(Vector3Int worldPos)
+    public HashSet<Vector3Int> UpdateBlock(Vector3Int worldPos, out HashSet<WorldChunk> modifedChunks)
     {
+        modifedChunks = new HashSet<WorldChunk>();
         HashSet<Vector3Int> nextBlocksToUpdate = new HashSet<Vector3Int>();
 
         Vector3Int localPos = WorldToLocalPosition(worldPos);
@@ -762,7 +775,8 @@ public class WorldChunk : MonoBehaviour
             Block bottomBlock = chunkManager.GetBlockAtPosition(bottomPos);
             if (bottomBlock == null || bottomBlock.type.name == "Air")
             {
-                nextBlocksToUpdate.UnionWith(chunkManager.ModifyBlock(bottomPos, blockToUpdate));
+                nextBlocksToUpdate.UnionWith(chunkManager.ModifyBlock(bottomPos, blockToUpdate, out HashSet<WorldChunk> modified));
+                modifedChunks.UnionWith(modified);
             } else
             {
                 //Vector3Int[] adjacentPositions =
@@ -791,7 +805,8 @@ public class WorldChunk : MonoBehaviour
             Block bottomBlock = chunkManager.GetBlockAtPosition(bottomPos);
             if (bottomBlock == null || bottomBlock.type.isTransparent)
             {
-                nextBlocksToUpdate.UnionWith(chunkManager.ModifyBlock(worldPos, null));
+                nextBlocksToUpdate.UnionWith(chunkManager.ModifyBlock(worldPos, null, out HashSet<WorldChunk> modified));
+                modifedChunks.UnionWith(modified);
                 chunkManager.entityManager.CreateBlockEntity(worldPos,blockToUpdate.type);
 
                 //nextBlocksToUpdate.Add(worldPos + Vector3Int.up);
@@ -808,8 +823,18 @@ public class WorldChunk : MonoBehaviour
             Block bottomBlock = chunkManager.GetBlockAtPosition(bottomPos);
             if (bottomBlock == null || bottomBlock.type.name != "Grass")
             {
-                chunkManager.ModifyBlock(bottomPos, null);
-                chunkManager.ModifyBlock(worldPos, null);
+                List<Vector3Int> positions = new List<Vector3Int>()
+                {
+                    bottomPos,
+                    worldPos
+                };
+                List<Block> blocks = new List<Block>()
+                {
+                    null,
+                    null
+                };
+                chunkManager.ModifyBlocks(positions, blocks, out HashSet<WorldChunk> modified);
+                modifedChunks.UnionWith(modified);
             }
         }
 
