@@ -110,6 +110,10 @@ public class WorldChunk : MonoBehaviour
 
         float p0 = Mathf.PerlinNoise(ox, oz);
         p0 = Mathf.Pow(p0, 1.5f);
+        if (float.IsNaN(p0) || p0 < 0)
+        {
+            p0 = 0f;
+        }
 
         int baseNoise = Mathf.FloorToInt(p0 * 20);
         baseNoise += 63;
@@ -200,37 +204,25 @@ public class WorldChunk : MonoBehaviour
         {
             type = BlockType.GetBlockType("Grass");
         }
-        else if (y == noise + 1 && y > waterLevel + 1)
+        else if (y == noise + 1 && y > waterLevel + 1 && isRavine == false)
         {
+            float plantProbability = 1f - Mathf.InverseLerp(waterLevel, waterLevel + 30, y);
+            plantProbability = Mathf.Pow(plantProbability,7f);
+            //plantProbability /= 2;
 
-            float p = Random.value;
-            if (p < 0.1f)
+            if (Random.value < plantProbability)
             {
+
+                float p = Random.value;
+
                 type = BlockType.GetBlockType("Tall Grass");
-            }
-            else if (p < 0.12f)
-            {
-                float p2 = Random.value;
-                if (p2 < 0.2f)
+
+                if (p < 0.25f)
                 {
-                    type = BlockType.GetBlockType("Yellow Flower");
+                    var plantTypes = BlockType.GetPlantBlockTypes();
+                    type = plantTypes[Random.Range(0, plantTypes.Count)];
                 }
-                else if (p2 < 0.4f)
-                {
-                    type = BlockType.GetBlockType("Daisy");
-                }
-                else if (p2 < 0.6f)
-                {
-                    type = BlockType.GetBlockType("Red Tulip");
-                }
-                else if (p2 < 0.8f)
-                {
-                    type = BlockType.GetBlockType("Pink Tulip");
-                }
-                else if (p2 < 1.0f)
-                {
-                    type = BlockType.GetBlockType("Orange Tulip");
-                }
+
 
             }
         } else
