@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class ChunkManager : MonoBehaviour
@@ -277,14 +278,16 @@ public class ChunkManager : MonoBehaviour
 
     private List<Vector3Int> GetInRangeChunkPositions(Vector3Int centerChunkPos, Vector3Int radius)
     {
-        List<Vector3Int> positionsInRange = new List<Vector3Int>();
-        List<float> distancesSqrd = new List<float>();
+        SortedList<float, Vector3Int> positionsInRange = new SortedList<float,Vector3Int>();
+ 
 
         //      int maxManhattanDist = radius.x;
         //radius.y = radius.x;
         //radius.z = radius.x;
 
         float maxDistSqrd = Mathf.Pow(radius.x * chunkSize.x, 2f);
+
+        int i = 0;
 
         for (int dx = -radius.x; dx <= radius.x; dx += 1)
         {
@@ -298,18 +301,8 @@ public class ChunkManager : MonoBehaviour
 
                     if (distSqrd <= maxDistSqrd)
                     {
-                        int index = 0;
-                        for (int i = 0; i < distancesSqrd.Count; i++)
-                        {
-                            if (distSqrd < distancesSqrd[i])
-                            {
-                                index = 0;
-                                break;
-                            }
-                        }
-                        positionsInRange.Insert(index, centerChunkPos + Vector3Int.RoundToInt(offset));
-                        distancesSqrd.Insert(index, distSqrd);
-                        //positionsInRange.Add(centerChunkPos + Vector3Int.RoundToInt(offset));
+                        i++;
+                        positionsInRange.Add(distSqrd + (i)*0.01f, centerChunkPos + Vector3Int.RoundToInt(offset));
                     }
 
                     //int manhattanDist = Mathf.Abs(dx) + Mathf.Abs(dy) + Mathf.Abs(dz);
@@ -328,7 +321,7 @@ public class ChunkManager : MonoBehaviour
         }
         
 
-        return positionsInRange;
+        return positionsInRange.Values.ToList();
     }
 
     private Vector3Int GetNearestChunkPosition(Vector3Int pos)
