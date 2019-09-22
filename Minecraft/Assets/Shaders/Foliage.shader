@@ -57,7 +57,7 @@ Shader "Custom/Foliage"
         {     
             if (v.color.r > 0.5) { // Use red vertex color as mask for whether this vertex should be wavy
                 
-                float3 worldPos = round(mul(v.vertex, unity_ObjectToWorld));
+                float3 worldPos = mul(v.vertex, unity_ObjectToWorld);
                 float2 uv_NoiseTex = worldPos.xz / _NoiseScale + float2(_Time.y * _TimeScale, _Time.y * _TimeScale);
 
                 float noise = tex2Dlod (_NoiseTex, float4(uv_NoiseTex, 0, 0)).r;
@@ -65,20 +65,7 @@ Shader "Custom/Foliage"
                 noise = (noise - _NoiseMin) / (_NoiseMax - _NoiseMin);
 
                 v.vertex += _WindDir * noise;
-                //v.vertex.x += sin(noise.r);
-                //v.vertex.z += cos(noise.r);
             }
-    
-            //float3 castToWorld = round(mul(unity_ObjectToWorld, v.vertex) );
-            
-
-            // get vertex world position
-            //float3 worldPos = round(mul(v.vertex, unity_ObjectToWorld));
-            // scroll sample position based on time
-            //worldPos += _Time.x * _WindSpeed.xy;
-            //v.vertex.y += _Amount;
-            //v.vertex.x += sin(v.vertex.y + _Time.y);
-            //v.vertex.z += cos(v.vertex.y + _Time.y);
         }
 
         void surf (Input IN, inout SurfaceOutputStandard o)
@@ -89,7 +76,6 @@ Shader "Custom/Foliage"
                 discard; // Cutout
             }
             o.Albedo = c.rgb;
-            //o.Albedo = IN.color;
             // Metallic and smoothness come from slider variables
             o.Metallic = _Metallic;
             o.Smoothness = _Glossiness;
