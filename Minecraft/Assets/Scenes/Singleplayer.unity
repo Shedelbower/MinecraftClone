@@ -512,7 +512,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!136 &141079102
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -3236,7 +3236,7 @@ GameObject:
   - component: {fileID: 1148804831}
   - component: {fileID: 1148804830}
   m_Layer: 0
-  m_Name: Post Processing Effect
+  m_Name: Post Processing Volume
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3519,6 +3519,7 @@ MonoBehaviour:
   characterController: {fileID: 1253456483}
   monitorController: {fileID: 367710417}
   hotbarController: {fileID: 1619786594}
+  postProcessVolume: {fileID: 1148804830}
   chunkManager: {fileID: 171080391}
   body: {fileID: 1242095299}
   feet: {fileID: 2051302010}

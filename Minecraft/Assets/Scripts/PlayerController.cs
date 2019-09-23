@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Rendering.PostProcessing;
 
 public class PlayerController : MonoBehaviour
 {
     public CharacterController characterController;
     public MonitorController monitorController;
     public HotbarController hotbarController;
+    public PostProcessVolume postProcessVolume;
     public ChunkManager chunkManager;
     public Transform body;
     public Transform feet;
@@ -238,6 +240,11 @@ public class PlayerController : MonoBehaviour
             this.ToggleUI();
         }
 
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            postProcessVolume.enabled = !postProcessVolume.enabled;
+        }
+
         if (_isInWater)
         {
             _jumpYVelocity /= 2.0f;
@@ -320,17 +327,18 @@ public class PlayerController : MonoBehaviour
         _jumpYVelocity = Mathf.Clamp(_jumpYVelocity, -_terminalVelocity, float.MaxValue);
 
         Vector3 jumpVelocity = Vector3.up * _jumpYVelocity;
-        //if (_isInWater)
-        //{
-        //    jumpVelocity *= waterSpeedModifier;
-        //}
+
         movement += jumpVelocity;
 
         if (Input.GetKey(KeyCode.Space) && _isInWater)
         {
             movement += Vector3.up * 4f;
-            //movement -= Vector3.up * gravity * Time.deltaTime; // Remove effects of gravity
-        } else if (_isJumping == false && characterController.isGrounded == false)
+        }
+        else if ((Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.LeftShift)) && _isInWater && characterController.isGrounded == false)
+        {
+            movement -= Vector3.up * 4f;
+        }
+        else if (_isJumping == false && characterController.isGrounded == false)
         {
             movement += Vector3.up * gravity * Time.deltaTime;
         }
