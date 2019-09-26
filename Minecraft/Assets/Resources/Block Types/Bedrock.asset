@@ -17,6 +17,7 @@ MonoBehaviour:
   atlasPositions:
   - {x: 0, y: 0}
   isTransparent: 0
+  isPlant: 0
   isBillboard: 0
   affectedByGravity: 0
   isSourceBlock: 0
@@ -70,9 +71,9 @@ MonoBehaviour:
       key5: {r: 0, g: 0, b: 0, a: 0}
       key6: {r: 0, g: 0, b: 0, a: 0}
       key7: {r: 0, g: 0, b: 0, a: 0}
-      ctime0: 12529
-      ctime1: 28527
-      ctime2: 47417
+      ctime0: 32960
+      ctime1: 50115
+      ctime2: 58596
       ctime3: 65535
       ctime4: 65535
       ctime5: 0
