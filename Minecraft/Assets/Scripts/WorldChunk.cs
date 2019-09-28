@@ -375,14 +375,13 @@ public class WorldChunk : MonoBehaviour
                 {
                     Block block = _blocks[i, j, k];
 
-                    if (isExternalBlock[i, j, k] && block.type != null && block.type.name == "Water")
+                    if (isExternalBlock[i, j, k] && Block.IsAirBlock(block) == false && block.type.name == "Water")
                     {
                         bool[] visibility = GetVisibility(i, j, k);
 
                         MeshData mesh = block.GenerateMesh(visibility, _atlasReader);
                         mesh.TransformVertices(Matrix4x4.Translate(new Vector3(i, j, k)));
                         meshes.Add(mesh);
-
                     }
                 }
             }
@@ -424,6 +423,8 @@ public class WorldChunk : MonoBehaviour
 
         mf.sharedMesh = null;
         Mesh final = MeshData.Combine(meshes);
+
+        AverageDuplicateVertexColors(final); // Make water smooth between different fluid levels
 
         mf.sharedMesh = final;
         mr.sharedMaterial = chunkWaterMaterial;
@@ -668,7 +669,8 @@ public class WorldChunk : MonoBehaviour
 
                 BlockType currType = currBlock == null ? null : currBlock.type;
                 BlockType newType = newBlock == null ? null : newBlock.type;
-                if (currType != newType)
+                bool bothAir = currType == null && newType == currType;
+                if (!bothAir && (currType != newType || (newType.isFluid && currType.isFluid)))
                 {
                     _blocks[localPos.x, localPos.y, localPos.z] = newBlock;
                     shouldRebuild = true;
@@ -758,46 +760,116 @@ public class WorldChunk : MonoBehaviour
         Vector3Int localPos = WorldToLocalPosition(worldPos);
         Block blockToUpdate = _blocks[localPos.x, localPos.y, localPos.z];
 
-        if (blockToUpdate == null)
+        if (Block.IsAirBlock(blockToUpdate))
         {
-            //return blocksToUpdate;
             // Ignore
         }
-        else if (blockToUpdate.type.isSourceBlock)
+        else if (blockToUpdate.type.isFluid)
         {
-            Vector3Int bottomPos = worldPos;
-            bottomPos.y--;
+            Debug.Log("Updating fluid");
+            Dictionary<Vector3Int, Block> blocksToFlowInto = new Dictionary<Vector3Int, Block>();
+
+            Vector3Int bottomPos = worldPos + Vector3Int.down;
             Block bottomBlock = chunkManager.GetBlockAtPosition(bottomPos);
-            if (bottomBlock == null || (bottomBlock.type.isTransparent && bottomBlock.type.name != "Water"))
+
+            if (Block.IsAirBlock(bottomBlock) || bottomBlock.type.isPlant)
             {
-                nextBlocksToUpdate.UnionWith(chunkManager.ModifyBlock(bottomPos, blockToUpdate, out HashSet<WorldChunk> modified));
-                modifedChunks.UnionWith(modified);
-            } else if (bottomBlock.type.name != "Water")
+                // Flow into block beneath water block
+                blocksToFlowInto.Add(bottomPos,bottomBlock);
+                //nextBlocksToUpdate.UnionWith(chunkManager.ModifyBlock(bottomPos, blockToUpdate, out HashSet<WorldChunk> modified));
+                //modifedChunks.UnionWith(modified);
+            }
+            else if (bottomBlock.type.isFluid && bottomBlock.FluidLevel < blockToUpdate.FluidLevel)
             {
+                // Flow into block beneath water block
+                blocksToFlowInto.Add(bottomPos, bottomBlock);
+            }
+            else
+            {
+                Debug.Log("Considering flowing into adj block");
+                // Can't flow down, so try to flow sideways
                 Vector3Int[] adjacentPositions =
                 {
                     worldPos + Vector3Int.right,
                     worldPos + Vector3Int.left,
                     worldPos + new Vector3Int(0,0,1),
-                    worldPos + new Vector3Int(0,0,-1),
+                    worldPos + new Vector3Int(0,0,-1)
                 };
 
-                List<Vector3Int> positionsToModify = new List<Vector3Int>();
-                List<Block> newBlocks = new List<Block>();
+                //List<Vector3Int> positionsToModify = new List<Vector3Int>();
+                //List<Block> newBlocks = new List<Block>();
                 foreach (Vector3Int adjPos in adjacentPositions)
                 {
-                    Block target = chunkManager.GetBlockAtPosition(adjPos);
-                    if (target == null || (target.type.isTransparent && target.type.name != "Water"))
+                    Block adjBlock = chunkManager.GetBlockAtPosition(adjPos);
+                    if (Block.IsAirBlock(adjBlock) || adjBlock.type.isPlant || adjBlock.type.isFluid)
                     {
-                        positionsToModify.Add(adjPos);
-                        newBlocks.Add(blockToUpdate);
-                        nextBlocksToUpdate.Add(adjPos);
+                        // Flow into adjacent block
+                        blocksToFlowInto.Add(adjPos, adjBlock);
                     }
+
+                    //if (target == null || (target.type.isTransparent && target.type.name != "Water"))
+                    //{
+                    //    positionsToModify.Add(adjPos);
+                    //    newBlocks.Add(blockToUpdate);
+                    //    nextBlocksToUpdate.Add(adjPos);
+                    //}
                 }
 
-                chunkManager.ModifyBlocks(positionsToModify, newBlocks, out HashSet<WorldChunk> modified);
-                modifedChunks.UnionWith(modified);
+                //chunkManager.ModifyBlocks(positionsToModify, newBlocks, out HashSet<WorldChunk> modified);
+                //modifedChunks.UnionWith(modified);
             }
+
+            // Do fluid sim
+            float MAX_INTER_BLOCK_FLOW_AMOUNT = 0.25f;
+            float MIN_INTER_BLOCK_FLOW_AMOUNT = 0.05f;
+            IEnumerable keys = blocksToFlowInto.Keys.ToList();
+            foreach(Vector3Int pos in keys)
+            {
+                if (blockToUpdate.FluidLevel <= MIN_INTER_BLOCK_FLOW_AMOUNT)
+                {
+                    break;
+                }
+
+                Block otherBlock = blocksToFlowInto[pos];
+                if (Block.IsAirBlock(otherBlock) || otherBlock.type.isFluid == false)
+                {
+                    // Air block, make water
+                    blocksToFlowInto[pos] = new Block(blockToUpdate.type)
+                    {
+                        FluidLevel = 0
+                    };
+                    Debug.Log($"Percentage={blocksToFlowInto[pos].FluidPercentage}");
+                    otherBlock = blocksToFlowInto[pos];
+                }
+
+                if (otherBlock.FluidLevel < blockToUpdate.FluidLevel - 2 * MIN_INTER_BLOCK_FLOW_AMOUNT || pos == bottomPos)
+                {
+                    float flowAmount = (pos == bottomPos)
+                        ? Mathf.Min(blockToUpdate.FluidLevel, Block.MAX_FLUID_LEVEL - otherBlock.FluidLevel)
+                        : Mathf.Min((blockToUpdate.FluidLevel - otherBlock.FluidLevel) / 2f, MAX_INTER_BLOCK_FLOW_AMOUNT);
+                    blockToUpdate.FluidLevel -= flowAmount;
+                    otherBlock.FluidLevel += flowAmount;
+
+                    chunkManager.ModifyBlock(pos, otherBlock, out HashSet<WorldChunk> modified);
+                    modifedChunks.UnionWith(modified);
+                    nextBlocksToUpdate.Add(pos);
+                    nextBlocksToUpdate.Add(worldPos);
+
+                    if (blockToUpdate.FluidLevel <= MIN_INTER_BLOCK_FLOW_AMOUNT)
+                    {
+                        Block airBlock = null;
+                        chunkManager.ModifyBlock(worldPos, airBlock, out HashSet<WorldChunk> modified2);
+                        modifedChunks.UnionWith(modified2);
+                    }
+                } else if (otherBlock.FluidLevel > blockToUpdate.FluidLevel + 2 * MIN_INTER_BLOCK_FLOW_AMOUNT)
+                {
+                    nextBlocksToUpdate.Add(pos);
+                }
+            }
+
+            //chunkManager.ModifyBlocks(blocksToFlowInto.Keys.ToList(), blocksToFlowInto.Values.ToList(), out HashSet<WorldChunk> modified);
+            //modifedChunks.UnionWith(modified);
+
         } else if (blockToUpdate.type.affectedByGravity)
         {
             Vector3Int bottomPos = worldPos;
@@ -839,6 +911,58 @@ public class WorldChunk : MonoBehaviour
         }
 
         return nextBlocksToUpdate;
+    }
+
+    private static Vector3Int HashVertex(Vector3 vertex)
+    {
+        return Vector3Int.RoundToInt(vertex * 100f);
+    }
+
+    public static void AverageDuplicateVertexColors(Mesh mesh)
+    {
+        var map = new Dictionary<Vector3Int, List<Color>>();
+        for (int i = 0; i < mesh.vertices.Length; i++)
+        {
+            Vector3Int vertexHash = HashVertex(mesh.vertices[i]);
+            Color color = mesh.colors[i];
+            if (map.ContainsKey(vertexHash) == false)
+            {
+                map[vertexHash] = new List<Color>
+                {
+                    color
+                };
+            } else
+            {
+                map[vertexHash].Add(color);
+            }
+        }
+
+        var avgColors = new Dictionary<Vector3Int, Color>();
+        foreach (var key in map.Keys)
+        {
+            Color avg = Color.black;
+            int count = 0;
+            foreach (var color in map[key])
+            {
+                if (color.b > 0.01f) //Only average blue colors
+                {
+                    avg += color;
+                    count++;
+                }
+                
+
+            }
+            avgColors[key] = avg/count;
+        }
+
+        List<Color> colors = new List<Color>();
+        for (int i = 0; i < mesh.vertices.Length; i++)
+        {
+            Vector3Int vertexHash = HashVertex(mesh.vertices[i]);
+            colors.Add(avgColors[vertexHash]);
+        }
+
+        mesh.SetColors(colors);
     }
 
 }
