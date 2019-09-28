@@ -53,6 +53,9 @@ public class TNTController : MonoBehaviour
         {
             material.SetColor("_EmissionColor", color);
         }
+
+        float scale = Mathf.Lerp(0.99f, 1.0f, 1f-t);
+        this.transform.localScale = Vector3.one * scale;
     }
 
     private void Explode()
