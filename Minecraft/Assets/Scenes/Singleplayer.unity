@@ -3549,7 +3549,7 @@ MonoBehaviour:
     type: 3}
   enderPearlPrefab: {fileID: 7524440426805192579, guid: 6bcc124095eaf487f8f4527ac2ce1567,
     type: 3}
-  waterTintColor: {r: 0.10898005, g: 0.3064046, b: 0.745283, a: 1}
+  waterTintColor: {r: 0.19579923, g: 0.42028266, b: 0.754717, a: 1}
   materialsToColor:
   - {fileID: 2100000, guid: ba6d2a2d180fd4e42b4842e600554a74, type: 2}
   - {fileID: 2100000, guid: efa3a9ea59db94157a03b1297d3355ef, type: 2}

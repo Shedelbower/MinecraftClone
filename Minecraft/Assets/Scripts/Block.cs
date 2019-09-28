@@ -16,24 +16,10 @@ public class Block
         Vector3.back
     };
 
-    public static readonly float MAX_FLUID_LEVEL = 1f;
 
     /*------------------------ MEMBER VARIABLES ------------------------*/
 
     public BlockType type;
-    public object metadata;
-
-    // Only applicable to fluid blocks
-    public float FluidLevel
-    {
-        get { return (float) metadata; }
-        set { metadata = (float) value; }
-    }
-
-    public float FluidPercentage
-    {
-        get { return (float)metadata / (float)MAX_FLUID_LEVEL; }
-    }
 
     /*------------------------ CONSTRUCTORS ------------------------*/
 
@@ -44,17 +30,12 @@ public class Block
     public Block(BlockType type)
     {
         this.type = type;
-        if (this.type.isFluid)
-        {
-            this.metadata = MAX_FLUID_LEVEL;
-        }
     }
 
     /*------------------------ PUBLIC METHODS ------------------------*/
 
     public bool IsTransparent()
     {
-        //return this.type == Type.Air || this.type == Type.Water;
         return this.type == null || this.type.isTransparent;
     }
 
@@ -191,35 +172,23 @@ public class Block
                 triangleLists[i][j] += i * 4;
             }
             allTriangles.AddRange(triangleLists[i]);
-        }
 
-        // Mesh mesh = new Mesh();
-        // mesh.SetVertices(allVertices);
-        // mesh.SetNormals(allNormals);
-        // mesh.SetUVs(0, allUVs);
-        // mesh.SetTriangles(allTriangles.ToArray(), 0);
+        }
 
         List<Color> allColors = new List<Color>();
         if (this.type.isFluid)
         {
             foreach (var vertex in allVertices)
             {
-                Color color = vertex.y > 0.0f ? new Color(0f, 0f, this.FluidPercentage) : Color.black;
-                allColors.Add(color);
+                //Color color = vertex.y > 0.0f ? Color.blue : Color.black;
+                allColors.Add(Color.blue);
             }
         }
-        
 
         MeshData data = new MeshData(allVertices, allNormals, allUVs, allTriangles.ToArray(), allColors.ToArray());
 
         return data;
     }
-
-    public bool AtMaximumFluidCapacity()
-    {
-        return Mathf.Abs((float)metadata - MAX_FLUID_LEVEL) <= 0.00001f;
-    }
-
     
 
     /*------------------------ STATIC METHODS ------------------------*/

@@ -35,7 +35,7 @@ public class PlayerController : MonoBehaviour
     public GameObject enderPearlPrefab;
 
     public Color waterTintColor = Color.blue;
-    private Color initialSkyColor;
+    //private Color initialSkyColor;
     public Material[] materialsToColor;
 
     public new Transform camera;
@@ -68,7 +68,35 @@ public class PlayerController : MonoBehaviour
 
     private bool _prevIsGrounded = true;
 
+    private Vector3Int _prevCameraBlockPos;
+
     private float _movementSincePrevStep = 0.0f;
+
+    private FogSettings _initialFogSettings;
+
+    private class FogSettings
+    {
+        public Color fogColor;
+        public bool fog;
+        public FogMode fogMode;
+        public float fogDensity;
+
+        public FogSettings()
+        {
+            this.fogColor = RenderSettings.fogColor;
+            this.fog = RenderSettings.fog;
+            this.fogMode = RenderSettings.fogMode;
+            this.fogDensity = RenderSettings.fogDensity;
+        }
+
+        public void Set()
+        {
+            RenderSettings.fog = fog;
+            RenderSettings.fogColor = fogColor;
+            RenderSettings.fogMode = fogMode;
+            RenderSettings.fogDensity = fogDensity;
+        }
+    }
 
     void Start()
     {
@@ -77,7 +105,8 @@ public class PlayerController : MonoBehaviour
 
         _textComponents = this.canvas.GetComponentsInChildren<Text>();
 
-        initialSkyColor = RenderSettings.fogColor;
+        //initialSkyColor = RenderSettings.fogColor;
+        _initialFogSettings = new FogSettings();
 
         _speed = baseSpeed;
 
@@ -188,17 +217,33 @@ public class PlayerController : MonoBehaviour
             }
 
             // Check if camera in water
-            currBlock = chunkManager.GetBlockAtPosition(Vector3Int.RoundToInt(camera.position));
-            currentType = currBlock == null ? null : currBlock.type;
-            if (currentType != null && currentType.name == "Water")
-            {
-                OnCameraEnterWater();
-            } else
-            {
-                OnCameraExitWater();
-            }
+            //currBlock = chunkManager.GetBlockAtPosition(Vector3Int.RoundToInt(camera.position));
+            //currentType = currBlock == null ? null : currBlock.type;
+            //if (currentType != null && currentType.name == "Water")
+            //{
+            //    OnCameraEnterWater();
+            //} else
+            //{
+            //    OnCameraExitWater();
+            //}
 
         }
+
+        Vector3Int cameraPos = Vector3Int.RoundToInt(camera.position);
+        if (cameraPos != _prevCameraBlockPos)
+        {
+            Block prevCameraBlock = chunkManager.GetBlockAtPosition(_prevCameraBlockPos);
+            Block cameraBlock = chunkManager.GetBlockAtPosition(cameraPos);
+            if (Block.IsAirBlock(cameraBlock) && (!Block.IsAirBlock(prevCameraBlock) && prevCameraBlock.type.name == "Water"))
+            {
+                OnCameraExitWater();
+            } else if (Block.IsAirBlock(prevCameraBlock) && (!Block.IsAirBlock(cameraBlock) && cameraBlock.type.name == "Water"))
+            {
+                OnCameraEnterWater();
+            }
+            _prevCameraBlockPos = cameraPos;
+        }
+        
 
         if (_prevIsGrounded != characterController.isGrounded) {
             _prevIsGrounded = characterController.isGrounded;
@@ -419,25 +464,25 @@ public class PlayerController : MonoBehaviour
         _isInWater = false;
         _speed = baseSpeed;
         SetMaterialColors(Color.white);
-        Camera.main.backgroundColor = initialSkyColor;
+        //Camera.main.backgroundColor = initialSkyColor;
     }
 
     private void OnCameraEnterWater()
     {
-        SetMaterialColors(waterTintColor);
+        //SetMaterialColors(waterTintColor);
         Camera.main.backgroundColor = waterTintColor;
-
-        //RenderSettings.fog = true;
-        //RenderSettings.fogColor = waterTintColor;
-        //RenderSettings.fogMode = FogMode.Exponential;
-        //RenderSettings.fogDensity = 0.15f;
+        RenderSettings.fog = true;
+        RenderSettings.fogColor = waterTintColor;
+        RenderSettings.fogMode = FogMode.Exponential;
+        RenderSettings.fogDensity = 0.2f;
     }
 
     private void OnCameraExitWater()
     {
-        SetMaterialColors(Color.white);
-        Camera.main.backgroundColor = initialSkyColor;
+        //SetMaterialColors(Color.white);
+        //Camera.main.backgroundColor = initialSkyColor;
 
+        _initialFogSettings.Set();
         //RenderSettings.fog = false;
         //RenderSettings.fogColor = initialSkyColor;
         //RenderSettings.fogMode = FogMode.Linear;
