@@ -57,7 +57,7 @@ Shader "Custom/Foliage"
         {     
             if (v.color.r > 0.5) { // Use red vertex color as mask for whether this vertex should be wavy
                 
-                float3 worldPos = mul(v.vertex, unity_ObjectToWorld);
+                float3 worldPos = mul(unity_ObjectToWorld,v.vertex);
                 float2 uv_NoiseTex = worldPos.xz / _NoiseScale + float2(_Time.y * _TimeScale, _Time.y * _TimeScale);
 
                 float noise = tex2Dlod (_NoiseTex, float4(uv_NoiseTex, 0, 0)).r;
