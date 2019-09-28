@@ -12,14 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 28a08073b11cc4289a3c8ab2936eedeb, type: 3}
   m_Name: Water
   m_EditorClassIdentifier: 
-  index: 13
+  index: 17
   name: Water
   atlasPositions:
   - {x: 0, y: 3}
   isTransparent: 1
+  isPlant: 0
   isBillboard: 0
   affectedByGravity: 0
   isSourceBlock: 1
+  isFluid: 1
   mustBeOnGrassBlock: 0
   digClip: {fileID: 0}
   stepClips: []
